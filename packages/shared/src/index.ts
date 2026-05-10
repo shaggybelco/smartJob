@@ -98,6 +98,7 @@ export const PublicUser = z.object({
   emailVerified: z.boolean().optional(),
   headline: z.string().nullable().optional(),
   bio: z.string().nullable().optional(),
+  searchable: z.boolean().optional(),
   company: PublicCompany.nullable().optional(),
   companyMembership: CompanyMembershipSchema.nullable().optional(),
   createdAt: z.string(),
@@ -262,6 +263,7 @@ export const UpdateProfileInput = z.object({
   name: z.string().min(1).max(80).optional(),
   headline: z.string().max(160).nullish(),
   bio: z.string().max(5000).nullish(),
+  searchable: z.boolean().optional(),
 });
 export type UpdateProfileInput = z.infer<typeof UpdateProfileInput>;
 
@@ -431,6 +433,114 @@ export const SavedJob = z.object({
 });
 export type SavedJob = z.infer<typeof SavedJob>;
 
+// Applicant discovery (recruiter)
+
+export const ApplicantsListQuery = z.object({
+  q: z.string().max(120).optional(),
+  skills: z.string().max(500).optional(),
+  skillMatch: z.enum(["any", "all"]).default("any"),
+  minYears: z.coerce.number().int().nonnegative().optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(100).default(20),
+});
+export type ApplicantsListQuery = z.infer<typeof ApplicantsListQuery>;
+
+export const ApplicantSummary = z.object({
+  id: z.string(),
+  name: z.string(),
+  headline: z.string().nullable().optional(),
+  bio: z.string().nullable().optional(),
+  skills: z.array(Skill),
+  yearsOfExperience: z.number().int().nonnegative(),
+  searchable: z.boolean(),
+  createdAt: z.string().datetime(),
+});
+export type ApplicantSummary = z.infer<typeof ApplicantSummary>;
+
+// Chat
+
+export const ChatAttachmentDto = z.object({
+  id: z.string(),
+  filename: z.string(),
+  mimeType: z.string(),
+  size: z.number().int(),
+});
+export type ChatAttachmentDto = z.infer<typeof ChatAttachmentDto>;
+
+export const ChatMessageDto = z.object({
+  id: z.string(),
+  threadId: z.string(),
+  senderId: z.string(),
+  body: z.string(),
+  createdAt: z.string().datetime(),
+  readAt: z.string().datetime().nullable().optional(),
+  attachments: z.array(ChatAttachmentDto).optional(),
+});
+export type ChatMessageDto = z.infer<typeof ChatMessageDto>;
+
+export const ChatOtherParty = z.object({
+  id: z.string(),
+  name: z.string(),
+  role: RoleSchema,
+  headline: z.string().nullable().optional(),
+  companyName: z.string().nullable().optional(),
+});
+export type ChatOtherParty = z.infer<typeof ChatOtherParty>;
+
+export const ChatThreadSummary = z.object({
+  id: z.string(),
+  otherParty: ChatOtherParty,
+  ownerRecruiterName: z.string().optional(),
+  lastMessageAt: z.string().datetime().nullable(),
+  lastMessage: z.string().nullable().optional(),
+  unreadCount: z.number().int().nonnegative(),
+  archived: z.boolean(),
+});
+export type ChatThreadSummary = z.infer<typeof ChatThreadSummary>;
+
+export const ChatThreadDetail = ChatThreadSummary.extend({
+  messages: z.array(ChatMessageDto),
+  canReply: z.boolean(),
+});
+export type ChatThreadDetail = z.infer<typeof ChatThreadDetail>;
+
+export const StartThreadInput = z.object({
+  applicantId: z.string().min(1),
+});
+export type StartThreadInput = z.infer<typeof StartThreadInput>;
+
+export const SendMessageInput = z.object({
+  body: z.string().max(5000).optional().or(z.literal("")),
+});
+export type SendMessageInput = z.infer<typeof SendMessageInput>;
+
+export const ChatSearchQuery = z.object({
+  q: z.string().min(1).max(120),
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(50).default(20),
+});
+export type ChatSearchQuery = z.infer<typeof ChatSearchQuery>;
+
+export const ChatSearchResult = z.object({
+  messageId: z.string(),
+  threadId: z.string(),
+  otherParty: ChatOtherParty,
+  snippet: z.string(),
+  createdAt: z.string().datetime(),
+});
+export type ChatSearchResult = z.infer<typeof ChatSearchResult>;
+
+// Push notifications
+
+export const RegisterPushSubscriptionInput = z.object({
+  endpoint: z.string().url(),
+  keys: z.object({
+    p256dh: z.string().min(1),
+    auth: z.string().min(1),
+  }),
+});
+export type RegisterPushSubscriptionInput = z.infer<typeof RegisterPushSubscriptionInput>;
+
 // Realtime SSE event payloads
 
 export const RealtimeEvent = z.discriminatedUnion("type", [
@@ -445,6 +555,23 @@ export const RealtimeEvent = z.discriminatedUnion("type", [
     type: z.literal("application.created"),
     jobApplicationId: z.string(),
     jobId: z.string(),
+  }),
+  z.object({
+    type: z.literal("chat.message"),
+    threadId: z.string(),
+    messageId: z.string(),
+    senderId: z.string(),
+  }),
+  z.object({
+    type: z.literal("chat.read"),
+    threadId: z.string(),
+    readerId: z.string(),
+  }),
+  z.object({
+    type: z.literal("chat.typing"),
+    threadId: z.string(),
+    userId: z.string(),
+    expiresAt: z.string().datetime(),
   }),
   z.object({ type: z.literal("ping") }),
 ]);

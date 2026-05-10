@@ -58,12 +58,73 @@ model User {
   passwordResetExpiresAt   DateTime?
   tokenVersion             Int              @default(0)
   createdAt                DateTime         @default(now())
+  searchable               Boolean          @default(true)
   applications             Application[]
   postedJobs               Job[]            @relation("JobPostedBy")
   jobApps                  JobApplication[] @relation("JobAppApplicant")
   savedJobs                SavedJob[]
   skills                   UserSkill[]
   experiences              WorkExperience[]
+  chatThreadsAsRecruiter   ChatThread[]     @relation("ChatRecruiter")
+  chatThreadsAsApplicant   ChatThread[]     @relation("ChatApplicant")
+  chatMessagesSent         ChatMessage[]
+  pushSubscriptions        PushSubscription[]
+}
+
+model ChatThread {
+  id                String        @id @default(cuid())
+  recruiterId       String
+  recruiter         User          @relation("ChatRecruiter", fields: [recruiterId], references: [id], onDelete: Cascade)
+  applicantId       String
+  applicant         User          @relation("ChatApplicant", fields: [applicantId], references: [id], onDelete: Cascade)
+  createdAt         DateTime      @default(now())
+  lastMessageAt     DateTime?
+  recruiterArchived Boolean       @default(false)
+  applicantArchived Boolean       @default(false)
+  messages          ChatMessage[]
+
+  @@unique([recruiterId, applicantId])
+  @@index([recruiterId, lastMessageAt])
+  @@index([applicantId, lastMessageAt])
+}
+
+model ChatMessage {
+  id          String           @id @default(cuid())
+  threadId    String
+  thread      ChatThread       @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  senderId    String
+  sender      User             @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  body        String
+  createdAt   DateTime         @default(now())
+  readAt      DateTime?
+  attachments ChatAttachment[]
+
+  @@index([threadId, createdAt])
+}
+
+model ChatAttachment {
+  id         String      @id @default(cuid())
+  messageId  String
+  message    ChatMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  storageKey String
+  filename   String
+  mimeType   String
+  size       Int
+  createdAt  DateTime    @default(now())
+
+  @@index([messageId])
+}
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endpoint  String   @unique
+  p256dh    String
+  authKey   String
+  createdAt DateTime @default(now())
+
+  @@index([userId])
 }
 
 model UserSkill {

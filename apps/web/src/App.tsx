@@ -29,6 +29,11 @@ import { RecruiterApplicationDetailPage } from "./pages/recruiter/ApplicationDet
 import { RecruiterInboxPage } from "./pages/recruiter/InboxPage";
 import { RecruiterFunnelPage } from "./pages/recruiter/FunnelPage";
 import { TeamPage } from "./pages/recruiter/TeamPage";
+import { DiscoverPage } from "./pages/recruiter/DiscoverPage";
+import { ApplicantDetailPageRecruiter } from "./pages/recruiter/ApplicantDetailPageRecruiter";
+import { TeamThreadsPage, TeamThreadDetailPage } from "./pages/recruiter/TeamThreadsPage";
+import { MessagesListPage } from "./pages/messages/MessagesListPage";
+import { MessageThreadPage } from "./pages/messages/MessageThreadPage";
 import { InboxPage } from "./pages/inbox/InboxPage";
 import { ProfilePage } from "./pages/profile/ProfilePage";
 
@@ -103,6 +108,13 @@ export default function App() {
       <Route path="/saved" element={<Protected><RequireRole role="APPLICANT"><SavedJobsPage /></RequireRole></Protected>} />
       <Route path="/profile" element={<Protected><RequireRole role="APPLICANT"><ProfilePage /></RequireRole></Protected>} />
 
+      <Route path="/messages" element={<Protected><MessagesListPage /></Protected>} />
+      <Route path="/messages/:id" element={<Protected><MessageThreadPage /></Protected>} />
+
+      <Route path="/recruiter/discover" element={recruiterRoute(<DiscoverPage />)} />
+      <Route path="/recruiter/applicants/:id" element={recruiterRoute(<ApplicantDetailPageRecruiter />)} />
+      <Route path="/recruiter/team/threads" element={adminRoute(<TeamThreadsPage />)} />
+      <Route path="/recruiter/team/threads/:id" element={adminRoute(<TeamThreadDetailPage />)} />
       <Route path="/recruiter/inbox" element={recruiterRoute(<RecruiterInboxPage />)} />
       <Route path="/recruiter/funnel" element={recruiterRoute(<RecruiterFunnelPage />)} />
       <Route path="/recruiter/jobs" element={recruiterRoute(<MyJobsPage />)} />

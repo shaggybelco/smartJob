@@ -25,6 +25,7 @@ export const ProfileService = {
         emailVerified: flat.emailVerified,
         headline: flat.headline,
         bio: flat.bio,
+        searchable: flat.searchable,
         company: flat.company,
         companyMembership: flat.companyMembership,
         createdAt: flat.createdAt.toISOString(),
@@ -50,6 +51,7 @@ export const ProfileService = {
       ...(input.name !== undefined ? { name: input.name } : {}),
       ...(input.headline !== undefined ? { headline: input.headline } : {}),
       ...(input.bio !== undefined ? { bio: input.bio } : {}),
+      ...(input.searchable !== undefined ? { searchable: input.searchable } : {}),
     });
     return ProfileService.get(userId);
   },

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Briefcase, Pencil, Plus, Trash2, User } from "lucide-react";
+import { Briefcase, Pencil, Plus, Trash2, User, Eye, BellRing, BellOff } from "lucide-react";
 import {
   useAddExperience,
   useDeleteExperience,
@@ -8,6 +8,12 @@ import {
   useUpdateExperience,
   useUpdateProfile,
 } from "../../api/profile";
+import {
+  getCurrentSubscription,
+  isPushSupported,
+  subscribeToPush,
+  unsubscribeFromPush,
+} from "../../api/push";
 import { SkillsInput } from "../../components/SkillsInput";
 import type { WorkExperience } from "@smartjob/shared";
 
@@ -19,16 +25,25 @@ export function ProfilePage() {
   const [name, setName] = useState("");
   const [headline, setHeadline] = useState("");
   const [bio, setBio] = useState("");
+  const [searchable, setSearchable] = useState(true);
   const [skills, setSkillsLocal] = useState<string[]>([]);
+  const [pushEnabled, setPushEnabled] = useState(false);
+  const [pushBusy, setPushBusy] = useState(false);
 
   useEffect(() => {
     if (data) {
       setName(data.user.name);
       setHeadline(data.user.headline ?? "");
       setBio(data.user.bio ?? "");
+      setSearchable(data.user.searchable ?? true);
       setSkillsLocal(data.skills.map((s) => s.name));
     }
   }, [data]);
+
+  useEffect(() => {
+    if (!isPushSupported()) return;
+    void getCurrentSubscription().then((s) => setPushEnabled(!!s));
+  }, []);
 
   if (isLoading) return <div className="card h-48 animate-pulse" />;
   if (!data) return <div className="card p-6 text-rose-600">Couldn't load your profile.</div>;
@@ -40,10 +55,27 @@ export function ProfilePage() {
   const profileDirty =
     name !== data.user.name ||
     headline !== (data.user.headline ?? "") ||
-    bio !== (data.user.bio ?? "");
+    bio !== (data.user.bio ?? "") ||
+    searchable !== (data.user.searchable ?? true);
 
-  const saveProfile = () => updateProfile.mutate({ name, headline, bio });
+  const saveProfile = () =>
+    updateProfile.mutate({ name, headline, bio, searchable });
   const saveSkills = () => setSkills.mutate({ skills });
+
+  const togglePush = async () => {
+    setPushBusy(true);
+    try {
+      if (pushEnabled) {
+        await unsubscribeFromPush();
+        setPushEnabled(false);
+      } else {
+        const ok = await subscribeToPush();
+        setPushEnabled(ok);
+      }
+    } finally {
+      setPushBusy(false);
+    }
+  };
 
   return (
     <div className="space-y-5">
@@ -56,6 +88,49 @@ export function ProfilePage() {
           Skills here are used to recommend jobs and to show recruiters at a glance what you do.
         </p>
       </div>
+
+      <section className="card space-y-3 p-5">
+        <div className="flex items-center gap-2 text-sm font-semibold">
+          <Eye size={15} />
+          Visibility
+        </div>
+        <label className="flex cursor-pointer items-start gap-3 rounded-md border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-900">
+          <input
+            type="checkbox"
+            checked={searchable}
+            onChange={(e) => setSearchable(e.target.checked)}
+            className="mt-0.5 accent-brand-600"
+          />
+          <div>
+            <div className="text-sm font-medium">Discoverable to recruiters</div>
+            <div className="text-xs text-slate-500">
+              When on, recruiters can find you on the Discover page and start a chat.
+              Turn off to hide your profile from new searches. Existing conversations stay open.
+            </div>
+          </div>
+        </label>
+        {isPushSupported() && (
+          <div className="flex items-center justify-between rounded-md border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-900">
+            <div className="flex items-start gap-3">
+              {pushEnabled ? <BellRing size={15} className="mt-0.5 text-brand-600" /> : <BellOff size={15} className="mt-0.5 text-slate-400" />}
+              <div>
+                <div className="text-sm font-medium">Browser notifications</div>
+                <div className="text-xs text-slate-500">
+                  Get a push notification when someone messages you and your tab isn't open.
+                </div>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={togglePush}
+              disabled={pushBusy}
+              className={pushEnabled ? "btn-secondary btn-xs" : "btn-primary btn-xs"}
+            >
+              {pushEnabled ? "Disable" : "Enable"}
+            </button>
+          </div>
+        )}
+      </section>
 
       <section className="card space-y-4 p-5">
         <div className="flex items-center gap-2 text-sm font-semibold">

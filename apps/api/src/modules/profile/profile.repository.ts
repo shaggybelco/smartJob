@@ -13,6 +13,7 @@ export const ProfileRepository = {
         emailVerified: true,
         headline: true,
         bio: true,
+        searchable: true,
         createdAt: true,
         company: { select: { id: true, name: true, website: true, description: true } },
         companyMembership: true,

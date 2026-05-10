@@ -15,6 +15,10 @@ class RealtimeBus {
     return () => this.bus.off(channel, handler);
   }
 
+  hasListeners(channel: Channel): boolean {
+    return this.bus.listenerCount(channel) > 0;
+  }
+
   publishToUser(userId: string, event: RealtimeEvent) {
     this.bus.emit(`user:${userId}` satisfies Channel, event);
   }

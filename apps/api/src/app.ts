@@ -26,6 +26,9 @@ import { savedJobsRouter } from "./modules/savedJobs/savedJobs.routes.js";
 import realtimeRouter from "./modules/realtime/realtime.routes.js";
 import membersRouter from "./modules/members/members.routes.js";
 import profileRouter from "./modules/profile/profile.routes.js";
+import applicantsRouter from "./modules/applicants/applicants.routes.js";
+import { chatRouter, teamChatRouter } from "./modules/chat/chat.routes.js";
+import { pushRouter } from "./modules/push/push.routes.js";
 import docsRouter from "./modules/docs/docs.routes.js";
 import { errorHandler, notFound } from "./middleware/error.js";
 
@@ -53,6 +56,8 @@ export function createApp() {
   app.use("/api/analytics", analyticsRouter);
   app.use("/api/recruiter/analytics", recruiterAnalyticsRouter);
   app.use("/api/recruiter/members", membersRouter);
+  app.use("/api/recruiter/applicants", applicantsRouter);
+  app.use("/api/recruiter/team/threads", teamChatRouter);
   app.use("/api/jobs", jobsRouter);
   app.use("/api/recruiter/jobs", recruiterJobsRouter);
   app.use("/api/recruiter/applications", recruiterApplicationsRouter);
@@ -60,6 +65,8 @@ export function createApp() {
   app.use("/api/me/job-applications", myJobApplicationsRouter);
   app.use("/api/me/saved-jobs", savedJobsRouter);
   app.use("/api/me/profile", profileRouter);
+  app.use("/api/me/push-subscriptions", pushRouter);
+  app.use("/api/chat", chatRouter);
   app.use("/api/companies", companiesRouter);
   app.use("/api/resumes", resumesRouter);
   app.use("/api/skills", skillsRouter);

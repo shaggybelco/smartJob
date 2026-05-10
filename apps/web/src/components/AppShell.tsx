@@ -14,16 +14,23 @@ import {
   TrendingUp,
   Users,
   UserCircle2,
+  MessageSquare,
+  Search as SearchIcon,
+  Library,
 } from "lucide-react";
 import type { Role } from "@smartjob/shared";
 import { useAuth } from "../lib/auth";
+import { useUnreadCount } from "../api/chat";
 import { cn } from "../lib/cn";
 
 type NavItem = { to: string; label: string; icon: typeof LayoutDashboard };
 
+type NavItemWithBadge = NavItem & { badge?: number };
+
 const applicantNav: NavItem[] = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/inbox", label: "Inbox", icon: Inbox },
+  { to: "/messages", label: "Messages", icon: MessageSquare },
   { to: "/applications", label: "Applications", icon: ListChecks },
   { to: "/board", label: "Board", icon: Kanban },
   { to: "/saved", label: "Saved", icon: Bookmark },
@@ -33,19 +40,24 @@ const applicantNav: NavItem[] = [
 
 const recruiterNav: NavItem[] = [
   { to: "/recruiter/inbox", label: "Inbox", icon: Inbox },
+  { to: "/recruiter/discover", label: "Discover", icon: SearchIcon },
+  { to: "/messages", label: "Messages", icon: MessageSquare },
   { to: "/recruiter/funnel", label: "Funnel", icon: TrendingUp },
   { to: "/recruiter/jobs", label: "My jobs", icon: Briefcase },
   { to: "/jobs", label: "Job board", icon: Kanban },
 ];
 
-const adminExtra: NavItem = { to: "/recruiter/team", label: "Team", icon: Users };
+const adminExtras: NavItem[] = [
+  { to: "/recruiter/team", label: "Team", icon: Users },
+  { to: "/recruiter/team/threads", label: "Team threads", icon: Library },
+];
 
 const navFor = (
   role: Role | undefined,
   membership: "PENDING" | "APPROVED" | "ADMIN" | null | undefined,
 ): NavItem[] => {
   if (role !== "RECRUITER") return applicantNav;
-  return membership === "ADMIN" ? [...recruiterNav, adminExtra] : recruiterNav;
+  return membership === "ADMIN" ? [...recruiterNav, ...adminExtras] : recruiterNav;
 };
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -149,6 +161,8 @@ function SidebarContents({
   hideLogo?: boolean;
 }) {
   const { user, logout } = useAuth();
+  const { data: unread } = useUnreadCount();
+  const unreadCount = unread?.unread ?? 0;
 
   return (
     <>
@@ -178,7 +192,12 @@ function SidebarContents({
                 }
               >
                 <Icon size={16} className="shrink-0" />
-                <span>{label}</span>
+                <span className="flex-1">{label}</span>
+                {to === "/messages" && unreadCount > 0 && (
+                  <span className="rounded-full bg-rose-500 px-1.5 text-[10px] font-semibold text-white">
+                    {unreadCount}
+                  </span>
+                )}
               </NavLink>
             </li>
           ))}

@@ -1,15 +1,12 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-// Resolve the api package root regardless of where Node is invoked from.
-// __dirname is not available in ESM, so we compute it.
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-/** Absolute path to apps/api/uploads/. Created on demand. */
 export const UPLOADS_DIR = path.resolve(__dirname, "..", "..", "uploads");
+export const CHAT_UPLOADS_DIR = path.resolve(UPLOADS_DIR, "chat");
 
-/** Allowed CV mime types. */
 export const ACCEPTED_RESUME_MIMES = new Set([
   "application/pdf",
   "application/msword",
@@ -17,4 +14,13 @@ export const ACCEPTED_RESUME_MIMES = new Set([
   "text/plain",
 ]);
 
-export const MAX_RESUME_BYTES = 5 * 1024 * 1024; // 5 MB
+export const ACCEPTED_CHAT_MIMES = new Set([
+  ...ACCEPTED_RESUME_MIMES,
+  "image/png",
+  "image/jpeg",
+  "image/gif",
+  "image/webp",
+]);
+
+export const MAX_RESUME_BYTES = 5 * 1024 * 1024;
+export const MAX_CHAT_BYTES = 10 * 1024 * 1024;

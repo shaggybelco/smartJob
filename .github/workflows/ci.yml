@@ -44,6 +44,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Build shared
+        run: pnpm --filter @smartjob/shared run build
+
       - name: Generate Prisma client
         run: pnpm --filter api exec prisma generate
 

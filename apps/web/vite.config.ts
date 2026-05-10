@@ -1,3 +1,4 @@
+/// <reference types="vitest" />
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "node:path";
@@ -14,7 +15,6 @@ export default defineConfig({
     port: 5173,
     strictPort: true,
     watch: {
-      // poll inside Docker so file changes from the host are detected
       usePolling: true,
       interval: 200,
     },

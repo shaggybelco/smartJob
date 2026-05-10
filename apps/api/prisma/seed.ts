@@ -3,90 +3,169 @@ import bcrypt from "bcrypt";
 
 const prisma = new PrismaClient();
 
+const slugify = (input: string) =>
+  input
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+
+const upsertSkill = (name: string) =>
+  prisma.skill.upsert({
+    where: { slug: slugify(name) },
+    update: {},
+    create: { name, slug: slugify(name) },
+  });
+
 async function main() {
   const applicantEmail = "demo@smartjob.local";
   const recruiterEmail = "recruiter@smartjob.local";
-
   const passwordHash = await bcrypt.hash("demo1234", 10);
 
-  // ── Company (Acme Corp) ─────────────────────────────────────
   const acme = await prisma.company.upsert({
     where: { name: "Acme Corp" },
     update: {},
     create: {
       name: "Acme Corp",
       website: "https://acme.example.com",
-      description: "We make industrial-strength widgets and hire great people.",
+      description: "Industrial-strength widgets, hiring great engineers.",
     },
   });
 
-  // ── Recruiter ───────────────────────────────────────────────
   const recruiter = await prisma.user.upsert({
     where: { email: recruiterEmail },
-    update: { role: "RECRUITER", companyId: acme.id },
+    update: {
+      role: "RECRUITER",
+      companyId: acme.id,
+      companyMembership: "ADMIN",
+      emailVerified: true,
+    },
     create: {
       email: recruiterEmail,
       name: "Rachel Recruiter",
       passwordHash,
       role: "RECRUITER",
       companyId: acme.id,
+      companyMembership: "ADMIN",
+      emailVerified: true,
     },
   });
 
-  // ── Jobs (idempotent: create only if no jobs for Acme yet) ──
+  const skills = await Promise.all(
+    ["TypeScript", "Postgres", "React", "Node.js", "GraphQL", "AWS", "Docker", "Kubernetes"].map(
+      upsertSkill,
+    ),
+  );
+  const skillByName = (name: string) => skills.find((s) => s.name === name)!;
+
+  const ensureSkills = async (jobId: string, names: string[]) => {
+    const existing = await prisma.jobSkill.count({ where: { jobId } });
+    if (existing > 0) return;
+    await prisma.jobSkill.createMany({
+      data: names.map((n) => ({ jobId, skillId: skillByName(n).id })),
+      skipDuplicates: true,
+    });
+  };
+
   const existingJobCount = await prisma.job.count({ where: { companyId: acme.id } });
+  if (existingJobCount > 0) {
+    const backend = await prisma.job.findFirst({
+      where: { companyId: acme.id, title: "Senior Backend Engineer" },
+    });
+    if (backend) {
+      await ensureSkills(backend.id, ["TypeScript", "Postgres", "Node.js", "AWS"]);
+      const qCount = await prisma.jobQuestion.count({ where: { jobId: backend.id } });
+      if (qCount === 0) {
+        await prisma.jobQuestion.createMany({
+          data: [
+            { jobId: backend.id, prompt: "What's your notice period?", required: true, position: 0 },
+            { jobId: backend.id, prompt: "Tell us about a system you scaled.", required: false, position: 1 },
+          ],
+        });
+      }
+      await prisma.job.update({ where: { id: backend.id }, data: { remote: true } });
+    }
+    const frontend = await prisma.job.findFirst({
+      where: { companyId: acme.id, title: "Frontend Engineer" },
+    });
+    if (frontend) await ensureSkills(frontend.id, ["TypeScript", "React"]);
+  }
   if (existingJobCount === 0) {
-    await prisma.job.createMany({
+    const backend = await prisma.job.create({
+      data: {
+        companyId: acme.id,
+        postedById: recruiter.id,
+        title: "Senior Backend Engineer",
+        description:
+          "Build and scale our distributed widget services. Stack: TypeScript, Postgres, Redis. Remote-friendly.",
+        location: "Remote",
+        remote: true,
+        salaryMin: 900_000,
+        salaryMax: 1_200_000,
+        status: "OPEN",
+      },
+    });
+    await prisma.jobSkill.createMany({
+      data: ["TypeScript", "Postgres", "Node.js", "AWS"].map((n) => ({
+        jobId: backend.id,
+        skillId: skillByName(n).id,
+      })),
+    });
+    await prisma.jobQuestion.createMany({
       data: [
-        {
-          companyId: acme.id,
-          postedById: recruiter.id,
-          title: "Senior Backend Engineer",
-          description:
-            "Build and scale our distributed widget services. Stack: TypeScript, Postgres, Redis. Remote-friendly.",
-          location: "Remote",
-          salaryMin: 900_000,
-          salaryMax: 1_200_000,
-          status: "OPEN",
-        },
-        {
-          companyId: acme.id,
-          postedById: recruiter.id,
-          title: "Frontend Engineer",
-          description:
-            "Lead UI work on our dashboard. React, TypeScript, Tailwind. Hybrid in Cape Town.",
-          location: "Cape Town",
-          salaryMin: 650_000,
-          salaryMax: 850_000,
-          status: "OPEN",
-        },
-        {
-          companyId: acme.id,
-          postedById: recruiter.id,
-          title: "Site Reliability Engineer",
-          description: "Older role from last quarter — kept for demo of CLOSED jobs.",
-          location: "Remote",
-          salaryMin: 950_000,
-          salaryMax: 1_300_000,
-          status: "CLOSED",
-        },
+        { jobId: backend.id, prompt: "What's your notice period?", required: true, position: 0 },
+        { jobId: backend.id, prompt: "Tell us about a system you scaled.", required: false, position: 1 },
       ],
+    });
+
+    const frontend = await prisma.job.create({
+      data: {
+        companyId: acme.id,
+        postedById: recruiter.id,
+        title: "Frontend Engineer",
+        description:
+          "Lead UI work on our dashboard. React, TypeScript, Tailwind. Hybrid in Cape Town.",
+        location: "Cape Town",
+        remote: false,
+        salaryMin: 650_000,
+        salaryMax: 850_000,
+        status: "OPEN",
+      },
+    });
+    await prisma.jobSkill.createMany({
+      data: ["TypeScript", "React"].map((n) => ({
+        jobId: frontend.id,
+        skillId: skillByName(n).id,
+      })),
+    });
+
+    await prisma.job.create({
+      data: {
+        companyId: acme.id,
+        postedById: recruiter.id,
+        title: "Site Reliability Engineer",
+        description: "Closed role from last quarter. Kept for the demo of CLOSED jobs.",
+        location: "Remote",
+        remote: true,
+        salaryMin: 950_000,
+        salaryMax: 1_300_000,
+        status: "CLOSED",
+      },
     });
   }
 
-  // ── Applicant (existing demo user) ──────────────────────────
   const applicant = await prisma.user.upsert({
     where: { email: applicantEmail },
-    update: { role: "APPLICANT" },
+    update: { role: "APPLICANT", emailVerified: true },
     create: {
       email: applicantEmail,
       name: "Demo Applicant",
       passwordHash,
       role: "APPLICANT",
+      emailVerified: true,
     },
   });
 
-  // ── Off-platform applications (the original demo) ──────────
   const existingTracker = await prisma.application.count({
     where: { userId: applicant.id, jobApplicationId: null },
   });
@@ -100,7 +179,6 @@ async function main() {
     });
   }
 
-  // ── In-platform application: applicant → first open Acme job ─
   const firstOpenJob = await prisma.job.findFirst({
     where: { companyId: acme.id, status: "OPEN" },
     orderBy: { createdAt: "asc" },
@@ -116,7 +194,7 @@ async function main() {
             jobId: firstOpenJob.id,
             applicantId: applicant.id,
             coverLetter:
-              "I'm excited about widget infrastructure and have shipped backend systems at scale. Would love to chat!",
+              "I'm excited about widget infrastructure and have shipped backend systems at scale.",
             status: "INTERVIEW",
           },
         });
@@ -135,7 +213,7 @@ async function main() {
     }
   }
 
-  console.log("Seed: applicant + recruiter + Acme jobs + linked in-platform application ready.");
+  console.log("Seed: applicant + recruiter + Acme jobs + skills + sample questions ready.");
 }
 
 main()

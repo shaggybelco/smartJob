@@ -1,15 +1,33 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Search, MapPin, Briefcase, Sparkles } from "lucide-react";
+import { Search, MapPin, Briefcase, Sparkles, Filter, Globe } from "lucide-react";
 import { usePublicJobs } from "../../api/jobs";
+import { useSkills } from "../../api/skills";
 import { useAuth } from "../../lib/auth";
 import { formatZarRange } from "../../lib/format";
+import { SaveJobButton } from "../../components/SaveJobButton";
+import { SalaryRange } from "../../components/SalaryRange";
+import { cn } from "../../lib/cn";
 
 export function JobBoardPage() {
   const { user } = useAuth();
   const [q, setQ] = useState("");
   const [location, setLocation] = useState("");
-  const { data, isLoading } = usePublicJobs({ q, location, pageSize: 50 });
+  const [skill, setSkill] = useState<string | null>(null);
+  const [remote, setRemote] = useState(false);
+  const [salary, setSalary] = useState({ min: 0, max: 2_000_000 });
+  const [filtersOpen, setFiltersOpen] = useState(false);
+
+  const { data, isLoading } = usePublicJobs({
+    q,
+    location,
+    skill: skill ?? undefined,
+    remote: remote || undefined,
+    salaryMin: salary.min || undefined,
+    salaryMax: salary.max < 2_000_000 ? salary.max : undefined,
+    pageSize: 50,
+  });
+  const { data: skills } = useSkills();
 
   const inShell = !!user;
 
@@ -45,29 +63,98 @@ export function JobBoardPage() {
           </div>
         </div>
 
-        {/* Search bar */}
-        <div className="card mt-6 flex flex-col gap-2 p-3 sm:flex-row">
-          <div className="relative flex-1">
-            <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="Search title, description, company…"
-              className="input pl-9"
-            />
+        <div className="card mt-6 p-3">
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <div className="relative flex-1">
+              <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder="Search title, description, company…"
+                className="input pl-9"
+              />
+            </div>
+            <div className="relative sm:w-56">
+              <MapPin size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                placeholder="Location"
+                className="input pl-9"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={() => setFiltersOpen((v) => !v)}
+              className={cn(
+                "btn-secondary",
+                filtersOpen && "border-brand-500 text-brand-700",
+              )}
+            >
+              <Filter size={14} />
+              Filters
+            </button>
           </div>
-          <div className="relative sm:w-56">
-            <MapPin size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-              placeholder="Location"
-              className="input pl-9"
-            />
-          </div>
+
+          {filtersOpen && (
+            <div className="mt-4 grid gap-4 border-t border-slate-200 pt-4 dark:border-slate-800 sm:grid-cols-2">
+              <div>
+                <div className="label">Salary range (ZAR)</div>
+                <SalaryRange
+                  min={salary.min}
+                  max={salary.max}
+                  onChange={setSalary}
+                />
+              </div>
+              <div>
+                <div className="label">Remote</div>
+                <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900">
+                  <input
+                    type="checkbox"
+                    checked={remote}
+                    onChange={(e) => setRemote(e.target.checked)}
+                    className="accent-brand-600"
+                  />
+                  <Globe size={14} />
+                  Remote-only
+                </label>
+              </div>
+              <div className="sm:col-span-2">
+                <div className="label">Skills</div>
+                <div className="flex flex-wrap gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setSkill(null)}
+                    className={cn(
+                      "rounded-full px-3 py-1 text-xs font-medium transition-colors",
+                      skill === null
+                        ? "bg-brand-600 text-white"
+                        : "bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200",
+                    )}
+                  >
+                    Any
+                  </button>
+                  {skills?.map((s) => (
+                    <button
+                      key={s.id}
+                      type="button"
+                      onClick={() => setSkill(skill === s.slug ? null : s.slug)}
+                      className={cn(
+                        "rounded-full px-3 py-1 text-xs font-medium transition-colors",
+                        skill === s.slug
+                          ? "bg-brand-600 text-white"
+                          : "bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200",
+                      )}
+                    >
+                      {s.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Results */}
         <div className="mt-6">
           {isLoading ? (
             <div className="grid gap-3">
@@ -90,13 +177,17 @@ export function JobBoardPage() {
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-start justify-between gap-2">
                           <div className="min-w-0">
-                            <div className="truncate text-lg font-semibold text-slate-900 group-hover:text-brand-700 dark:text-slate-100">
+                            <div className="truncate text-lg font-semibold text-slate-900 dark:text-slate-100">
                               {job.title}
                             </div>
                             <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-sm text-slate-500">
-                              <span className="font-medium text-slate-700 dark:text-slate-300">
+                              <Link
+                                to={`/c/${job.company.id}`}
+                                onClick={(e) => e.stopPropagation()}
+                                className="font-medium text-slate-700 hover:underline dark:text-slate-300"
+                              >
                                 {job.company.name}
-                              </span>
+                              </Link>
                               {job.location && (
                                 <>
                                   <span>·</span>
@@ -106,17 +197,38 @@ export function JobBoardPage() {
                                   </span>
                                 </>
                               )}
+                              {job.remote && (
+                                <span className="inline-flex items-center gap-1 text-emerald-600">
+                                  <Globe size={12} />
+                                  Remote
+                                </span>
+                              )}
                             </div>
                           </div>
-                          {(job.salaryMin || job.salaryMax) && (
-                            <span className="pill bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200">
-                              {formatZarRange(job.salaryMin, job.salaryMax)}
-                            </span>
-                          )}
+                          <div className="flex items-center gap-2">
+                            <SaveJobButton jobId={job.id} />
+                            {(job.salaryMin || job.salaryMax) && (
+                              <span className="pill bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200">
+                                {formatZarRange(job.salaryMin, job.salaryMax)}
+                              </span>
+                            )}
+                          </div>
                         </div>
-                        <p className="mt-3 line-clamp-2 text-sm text-slate-600 dark:text-slate-400">
+                        <p className="mt-2 line-clamp-2 text-sm text-slate-600 dark:text-slate-400">
                           {job.description}
                         </p>
+                        {job.skills && job.skills.length > 0 && (
+                          <div className="mt-3 flex flex-wrap gap-1">
+                            {job.skills.slice(0, 6).map((s) => (
+                              <span
+                                key={s.id}
+                                className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+                              >
+                                {s.name}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </Link>

@@ -11,7 +11,10 @@ const median = (values: number[]): number | null => {
   if (values.length === 0) return null;
   const sorted = [...values].sort((a, b) => a - b);
   const mid = Math.floor(sorted.length / 2);
-  return sorted.length % 2 === 0 ? (sorted[mid - 1] + sorted[mid]) / 2 : sorted[mid];
+  if (sorted.length % 2 === 0) {
+    return ((sorted[mid - 1] ?? 0) + (sorted[mid] ?? 0)) / 2;
+  }
+  return sorted[mid] ?? 0;
 };
 
 export const RecruiterFunnelService = {

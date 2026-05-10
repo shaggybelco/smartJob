@@ -23,6 +23,10 @@ export interface JobsListResponse {
 export interface JobsListParams {
   q?: string;
   location?: string;
+  skill?: string;
+  remote?: boolean;
+  salaryMin?: number;
+  salaryMax?: number;
   page?: number;
   pageSize?: number;
 }

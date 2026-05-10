@@ -19,16 +19,16 @@ export const ApplicationsController = {
   }),
 
   detail: asyncHandler(async (req, res) => {
-    res.json(await ApplicationsService.getOwned(req.params.id, req.userId!));
+    res.json(await ApplicationsService.getOwned(req.params.id!, req.userId!));
   }),
 
   update: asyncHandler(async (req, res) => {
     const input = UpdateApplicationInput.parse(req.body);
-    res.json(await ApplicationsService.update(req.params.id, req.userId!, input));
+    res.json(await ApplicationsService.update(req.params.id!, req.userId!, input));
   }),
 
   remove: asyncHandler(async (req, res) => {
-    await ApplicationsService.remove(req.params.id, req.userId!);
+    await ApplicationsService.remove(req.params.id!, req.userId!);
     res.status(204).end();
   }),
 };

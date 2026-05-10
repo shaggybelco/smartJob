@@ -10,6 +10,8 @@ import {
   Sparkles,
   Menu,
   X,
+  Bookmark,
+  TrendingUp,
 } from "lucide-react";
 import type { Role } from "@smartjob/shared";
 import { useAuth } from "../lib/auth";
@@ -22,11 +24,13 @@ const applicantNav: NavItem[] = [
   { to: "/inbox", label: "Inbox", icon: Inbox },
   { to: "/applications", label: "Applications", icon: ListChecks },
   { to: "/board", label: "Board", icon: Kanban },
+  { to: "/saved", label: "Saved", icon: Bookmark },
   { to: "/jobs", label: "Job board", icon: Briefcase },
 ];
 
 const recruiterNav: NavItem[] = [
   { to: "/recruiter/inbox", label: "Inbox", icon: Inbox },
+  { to: "/recruiter/funnel", label: "Funnel", icon: TrendingUp },
   { to: "/recruiter/jobs", label: "My jobs", icon: Briefcase },
   { to: "/jobs", label: "Job board", icon: Kanban },
 ];

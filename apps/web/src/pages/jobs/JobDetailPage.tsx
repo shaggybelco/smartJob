@@ -1,9 +1,10 @@
 import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, MapPin, Building2, Sparkles } from "lucide-react";
+import { ArrowLeft, MapPin, Building2, Sparkles, Globe } from "lucide-react";
 import { useJob } from "../../api/jobs";
 import { useAuth } from "../../lib/auth";
 import { formatZarRange } from "../../lib/format";
 import { CompanyAvatar } from "./JobBoardPage";
+import { SaveJobButton } from "../../components/SaveJobButton";
 
 export function JobDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -51,12 +52,18 @@ export function JobDetailPage() {
           <div className="flex items-start gap-4">
             <CompanyAvatar name={job.company.name} size={56} />
             <div className="min-w-0 flex-1">
-              <h1 className="text-2xl font-semibold tracking-tight">{job.title}</h1>
+              <div className="flex items-start justify-between gap-2">
+                <h1 className="text-2xl font-semibold tracking-tight">{job.title}</h1>
+                <SaveJobButton jobId={job.id} />
+              </div>
               <div className="mt-1 flex flex-wrap items-center gap-x-2 text-sm text-slate-500">
-                <span className="inline-flex items-center gap-1 font-medium text-slate-700 dark:text-slate-300">
+                <Link
+                  to={`/c/${job.company.id}`}
+                  className="inline-flex items-center gap-1 font-medium text-slate-700 hover:underline dark:text-slate-300"
+                >
                   <Building2 size={14} />
                   {job.company.name}
-                </span>
+                </Link>
                 {job.location && (
                   <>
                     <span>·</span>
@@ -65,6 +72,12 @@ export function JobDetailPage() {
                       {job.location}
                     </span>
                   </>
+                )}
+                {job.remote && (
+                  <span className="inline-flex items-center gap-1 text-emerald-600">
+                    <Globe size={14} />
+                    Remote
+                  </span>
                 )}
               </div>
               <div className="mt-3 flex flex-wrap gap-2">
@@ -83,6 +96,18 @@ export function JobDetailPage() {
                   </span>
                 )}
               </div>
+              {job.skills && job.skills.length > 0 && (
+                <div className="mt-3 flex flex-wrap gap-1">
+                  {job.skills.map((s) => (
+                    <span
+                      key={s.id}
+                      className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+                    >
+                      {s.name}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -96,6 +121,22 @@ export function JobDetailPage() {
           <div className="prose prose-sm max-w-none whitespace-pre-wrap text-slate-700 dark:text-slate-200">
             {job.description}
           </div>
+
+          {job.questions && job.questions.length > 0 && (
+            <div className="mt-6 rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900">
+              <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                What you'll be asked
+              </div>
+              <ul className="mt-2 space-y-1 text-sm text-slate-700 dark:text-slate-300">
+                {job.questions.map((q) => (
+                  <li key={q.id}>
+                    {q.prompt}
+                    {q.required && <span className="ml-1 text-rose-500">*</span>}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           <div className="mt-6 flex items-center gap-3">
             {!user ? (

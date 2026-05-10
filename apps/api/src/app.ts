@@ -12,6 +12,7 @@ import {
   remindersRouter,
 } from "./modules/reminders/reminders.routes.js";
 import analyticsRouter from "./modules/analytics/analytics.routes.js";
+import recruiterAnalyticsRouter from "./modules/analytics/recruiterFunnel.routes.js";
 import { jobsRouter, recruiterJobsRouter } from "./modules/jobs/jobs.routes.js";
 import {
   jobApplicationsRouter,
@@ -20,6 +21,11 @@ import {
 } from "./modules/jobApplications/jobApplications.routes.js";
 import companiesRouter from "./modules/companies/companies.routes.js";
 import resumesRouter from "./modules/resumes/resumes.routes.js";
+import skillsRouter from "./modules/skills/skills.routes.js";
+import { savedJobsRouter } from "./modules/savedJobs/savedJobs.routes.js";
+import realtimeRouter from "./modules/realtime/realtime.routes.js";
+import membersRouter from "./modules/members/members.routes.js";
+import docsRouter from "./modules/docs/docs.routes.js";
 import { errorHandler, notFound } from "./middleware/error.js";
 
 export function createApp() {
@@ -44,13 +50,19 @@ export function createApp() {
   app.use("/api/applications/:id/reminders", remindersOnApplicationRouter);
   app.use("/api/reminders", remindersRouter);
   app.use("/api/analytics", analyticsRouter);
+  app.use("/api/recruiter/analytics", recruiterAnalyticsRouter);
+  app.use("/api/recruiter/members", membersRouter);
   app.use("/api/jobs", jobsRouter);
   app.use("/api/recruiter/jobs", recruiterJobsRouter);
   app.use("/api/recruiter/applications", recruiterApplicationsRouter);
   app.use("/api/job-applications", jobApplicationsRouter);
   app.use("/api/me/job-applications", myJobApplicationsRouter);
+  app.use("/api/me/saved-jobs", savedJobsRouter);
   app.use("/api/companies", companiesRouter);
   app.use("/api/resumes", resumesRouter);
+  app.use("/api/skills", skillsRouter);
+  app.use("/api/realtime", realtimeRouter);
+  app.use("/api/docs", docsRouter);
 
   app.use(notFound);
   app.use(errorHandler);

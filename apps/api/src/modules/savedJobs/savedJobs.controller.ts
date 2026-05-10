@@ -22,12 +22,12 @@ export const SavedJobsController = {
   }),
 
   save: asyncHandler(async (req, res) => {
-    await SavedJobRepository.add(req.userId!, req.params.id);
+    await SavedJobRepository.add(req.userId!, req.params.id!);
     res.status(204).end();
   }),
 
   unsave: asyncHandler(async (req, res) => {
-    await SavedJobRepository.remove(req.userId!, req.params.id);
+    await SavedJobRepository.remove(req.userId!, req.params.id!);
     res.status(204).end();
   }),
 };

@@ -3,6 +3,6 @@ import { CompaniesService } from "./companies.service.js";
 
 export const CompaniesController = {
   detail: asyncHandler(async (req, res) => {
-    res.json(await CompaniesService.getPublic(req.params.id));
+    res.json(await CompaniesService.getPublic(req.params.id!));
   }),
 };

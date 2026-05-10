@@ -5,6 +5,13 @@ export const CompaniesService = {
   async getPublic(id: string) {
     const company = await CompanyRepository.findPublicById(id);
     if (!company) throw new HttpError(404, "Company not found");
-    return company;
+    const jobs = await CompanyRepository.listOpenJobs(id);
+    return {
+      ...company,
+      jobs: jobs.map((j) => ({
+        ...j,
+        skills: j.skills.map((s) => s.skill),
+      })),
+    };
   },
 };

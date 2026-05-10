@@ -22,6 +22,10 @@ const styles: Record<AppStatus, { wrap: string; dot: string }> = {
     wrap: "bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-200",
     dot: "bg-rose-500",
   },
+  WITHDRAWN: {
+    wrap: "bg-zinc-100 text-zinc-600 dark:bg-zinc-900/40 dark:text-zinc-300",
+    dot: "bg-zinc-400",
+  },
 };
 
 export function StatusBadge({ status }: { status: AppStatus }) {
@@ -34,13 +38,13 @@ export function StatusBadge({ status }: { status: AppStatus }) {
   );
 }
 
-/** Map a status to background tint used by board column headers. */
 export const statusColumnTint: Record<AppStatus, string> = {
   APPLIED: "bg-slate-50 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800",
   SCREENING: "bg-blue-50 dark:bg-blue-950/30 border-blue-100 dark:border-blue-900/40",
   INTERVIEW: "bg-amber-50 dark:bg-amber-950/30 border-amber-100 dark:border-amber-900/40",
   OFFER: "bg-emerald-50 dark:bg-emerald-950/30 border-emerald-100 dark:border-emerald-900/40",
   REJECTED: "bg-rose-50 dark:bg-rose-950/30 border-rose-100 dark:border-rose-900/40",
+  WITHDRAWN: "bg-zinc-50 dark:bg-zinc-900/40 border-zinc-200 dark:border-zinc-800",
 };
 
 export const statusDotTint: Record<AppStatus, string> = {
@@ -49,4 +53,5 @@ export const statusDotTint: Record<AppStatus, string> = {
   INTERVIEW: "bg-amber-500",
   OFFER: "bg-emerald-500",
   REJECTED: "bg-rose-500",
+  WITHDRAWN: "bg-zinc-400",
 };

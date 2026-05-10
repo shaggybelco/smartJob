@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, FileUp, X, FileText } from "lucide-react";
 import { useJob } from "../../api/jobs";
@@ -6,7 +6,7 @@ import { useApplyToJob } from "../../api/jobApplications";
 import { CompanyAvatar } from "./JobBoardPage";
 
 const ACCEPTED_EXT = ".pdf,.doc,.docx,.txt";
-const MAX_BYTES = 5 * 1024 * 1024; // must match the API setting
+const MAX_BYTES = 5 * 1024 * 1024;
 
 export function JobApplyPage() {
   const { id } = useParams<{ id: string }>();
@@ -17,8 +17,21 @@ export function JobApplyPage() {
   const [coverLetter, setCoverLetter] = useState("");
   const [resumeUrl, setResumeUrl] = useState("");
   const [resumeFile, setResumeFile] = useState<File | null>(null);
+  const [answers, setAnswers] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (job?.questions) {
+      setAnswers((prev) => {
+        const next = { ...prev };
+        for (const q of job.questions ?? []) {
+          if (next[q.id] === undefined) next[q.id] = "";
+        }
+        return next;
+      });
+    }
+  }, [job]);
 
   if (isLoading) return <div className="card h-48 animate-pulse" />;
   if (!job) return <div className="card p-6 text-rose-600">Job not found.</div>;
@@ -42,11 +55,25 @@ export function JobApplyPage() {
       setError("Attach a CV or write a cover letter.");
       return;
     }
+
+    const requiredMissing = (job.questions ?? []).filter(
+      (q) => q.required && !(answers[q.id] ?? "").trim(),
+    );
+    if (requiredMissing.length > 0) {
+      setError("Please answer all required questions.");
+      return;
+    }
+
+    const answerList = Object.entries(answers)
+      .filter(([, v]) => v.trim())
+      .map(([questionId, answer]) => ({ questionId, answer: answer.trim() }));
+
     try {
       await apply.mutateAsync({
         coverLetter: coverLetter.trim() || undefined,
         resumeUrl: resumeUrl.trim() || undefined,
         resumeFile,
+        answers: answerList.length > 0 ? answerList : undefined,
       });
       navigate("/applications");
     } catch (err) {
@@ -73,13 +100,10 @@ export function JobApplyPage() {
       </div>
 
       <form onSubmit={onSubmit} className="space-y-4">
-        {/* CV upload */}
         <div className="card p-5">
           <div className="label">CV / Resume</div>
           {!resumeFile ? (
-            <label
-              className="mt-1 flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-slate-300 bg-slate-50 px-6 py-8 text-center transition-colors hover:border-brand-400 hover:bg-brand-50/50 dark:border-slate-700 dark:bg-slate-900 dark:hover:border-brand-700 dark:hover:bg-brand-950/30"
-            >
+            <label className="mt-1 flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-slate-300 bg-slate-50 px-6 py-8 text-center transition-colors hover:border-brand-400 hover:bg-brand-50/50 dark:border-slate-700 dark:bg-slate-900 dark:hover:border-brand-700 dark:hover:bg-brand-950/30">
               <FileUp size={22} className="text-slate-400" />
               <div className="text-sm font-medium">Click to upload your CV</div>
               <div className="text-xs text-slate-500">PDF, DOC, DOCX or TXT — max 5 MB</div>
@@ -130,7 +154,6 @@ export function JobApplyPage() {
           </div>
         </div>
 
-        {/* Cover letter */}
         <div className="card p-5">
           <label htmlFor="coverLetter" className="label">
             Cover letter <span className="text-slate-400">(optional)</span>
@@ -144,6 +167,29 @@ export function JobApplyPage() {
             placeholder="Tell the recruiter why you're a great fit (optional)…"
           />
         </div>
+
+        {(job.questions ?? []).length > 0 && (
+          <div className="card space-y-4 p-5">
+            <div className="label">Questions from the recruiter</div>
+            {job.questions!.map((q) => (
+              <div key={q.id}>
+                <label className="block text-sm font-medium">
+                  {q.prompt}
+                  {q.required && <span className="ml-1 text-rose-500">*</span>}
+                </label>
+                <textarea
+                  value={answers[q.id] ?? ""}
+                  onChange={(e) =>
+                    setAnswers((prev) => ({ ...prev, [q.id]: e.target.value }))
+                  }
+                  rows={3}
+                  required={q.required}
+                  className="input mt-1"
+                />
+              </div>
+            ))}
+          </div>
+        )}
 
         {error && (
           <div className="rounded-md bg-rose-50 px-3 py-2 text-sm text-rose-700 dark:bg-rose-950/40 dark:text-rose-300">

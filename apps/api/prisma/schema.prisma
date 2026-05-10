@@ -12,6 +12,12 @@ enum Role {
   RECRUITER
 }
 
+enum CompanyMembership {
+  PENDING
+  APPROVED
+  ADMIN
+}
+
 enum JobStatus {
   OPEN
   CLOSED
@@ -40,9 +46,10 @@ model User {
   email                    String           @unique
   passwordHash             String
   name                     String
-  role                     Role             @default(APPLICANT)
+  role                     Role               @default(APPLICANT)
   companyId                String?
-  company                  Company?         @relation(fields: [companyId], references: [id])
+  company                  Company?           @relation(fields: [companyId], references: [id])
+  companyMembership        CompanyMembership?
   emailVerified            Boolean          @default(false)
   emailVerificationToken   String?          @unique
   passwordResetToken       String?          @unique

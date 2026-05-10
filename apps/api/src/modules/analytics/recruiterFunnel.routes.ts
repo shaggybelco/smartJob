@@ -1,10 +1,10 @@
 import { Router } from "express";
-import { requireAuth, requireRole } from "../../middleware/auth.js";
+import { requireApprovedRecruiter, requireAuth } from "../../middleware/auth.js";
 import { asyncHandler } from "../../lib/asyncHandler.js";
 import { RecruiterFunnelService } from "./recruiterFunnel.service.js";
 
 const router = Router();
-router.use(requireAuth, requireRole("RECRUITER"));
+router.use(requireAuth, requireApprovedRecruiter);
 router.get(
   "/summary",
   asyncHandler(async (req, res) => {

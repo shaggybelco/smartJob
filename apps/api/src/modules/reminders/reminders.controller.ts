@@ -16,12 +16,12 @@ export const RemindersController = {
 
   update: asyncHandler(async (req, res) => {
     const input = UpdateReminderInput.parse(req.body);
-    const updated = await RemindersService.update(req.params.id, req.userId!, input);
+    const updated = await RemindersService.update(req.params.id!, req.userId!, input);
     res.json(updated);
   }),
 
   remove: asyncHandler(async (req, res) => {
-    await RemindersService.remove(req.params.id, req.userId!);
+    await RemindersService.remove(req.params.id!, req.userId!);
     res.status(204).end();
   }),
 };

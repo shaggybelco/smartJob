@@ -1,29 +1,31 @@
 import { Router } from "express";
-import { requireAuth, requireRole } from "../../middleware/auth.js";
+import {
+  requireApprovedRecruiter,
+  requireAuth,
+  requireRole,
+} from "../../middleware/auth.js";
 import { resumeUpload } from "../../middleware/upload.js";
 import { JobsController } from "./jobs.controller.js";
 
-/** Mounted at /api/jobs — mixes public, recruiter, and applicant routes. */
 export const jobsRouter = Router();
 
 // Public
 jobsRouter.get("/", JobsController.list);
 jobsRouter.get("/:id", JobsController.detail);
 
-// Recruiter-only
-jobsRouter.post("/", requireAuth, requireRole("RECRUITER"), JobsController.create);
-jobsRouter.patch("/:id", requireAuth, requireRole("RECRUITER"), JobsController.update);
-jobsRouter.patch("/:id/close", requireAuth, requireRole("RECRUITER"), JobsController.close);
-jobsRouter.delete("/:id", requireAuth, requireRole("RECRUITER"), JobsController.remove);
+// Recruiter mutations require an approved (or admin) membership
+jobsRouter.post("/", requireAuth, requireApprovedRecruiter, JobsController.create);
+jobsRouter.patch("/:id", requireAuth, requireApprovedRecruiter, JobsController.update);
+jobsRouter.patch("/:id/close", requireAuth, requireApprovedRecruiter, JobsController.close);
+jobsRouter.delete("/:id", requireAuth, requireApprovedRecruiter, JobsController.remove);
 jobsRouter.get(
   "/:id/applications",
   requireAuth,
-  requireRole("RECRUITER"),
+  requireApprovedRecruiter,
   JobsController.inbox,
 );
 
-// Applicant-only — accepts multipart/form-data so a CV file can be attached.
-// `resume` is the file field name; `coverLetter` and `resumeUrl` are text fields.
+// Applicant
 jobsRouter.post(
   "/:id/apply",
   requireAuth,
@@ -32,7 +34,7 @@ jobsRouter.post(
   JobsController.apply,
 );
 
-/** Mounted at /api/recruiter/jobs — recruiter's own company jobs. */
+// Recruiter's own company jobs (list view) - approved recruiters only
 export const recruiterJobsRouter = Router();
-recruiterJobsRouter.use(requireAuth, requireRole("RECRUITER"));
+recruiterJobsRouter.use(requireAuth, requireApprovedRecruiter);
 recruiterJobsRouter.get("/", JobsController.myJobs);

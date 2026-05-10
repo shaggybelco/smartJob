@@ -101,6 +101,11 @@ export function LoginPage() {
               Create one
             </Link>
           </div>
+          <div className="mt-2 text-center text-xs text-slate-500">
+            <Link to="/reset-password" className="hover:underline">
+              Forgot password?
+            </Link>
+          </div>
           <div className="mt-3 text-center text-xs text-slate-400">
             <Link to="/jobs" className="hover:underline">
               Or browse jobs without an account →

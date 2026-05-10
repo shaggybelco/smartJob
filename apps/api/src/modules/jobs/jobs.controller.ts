@@ -15,7 +15,7 @@ export const JobsController = {
   }),
 
   detail: asyncHandler(async (req, res) => {
-    res.json(await JobsService.getPublic(req.params.id));
+    res.json(await JobsService.getPublic(req.params.id!));
   }),
 
   // Recruiter
@@ -27,15 +27,15 @@ export const JobsController = {
 
   update: asyncHandler(async (req, res) => {
     const input = UpdateJobInput.parse(req.body);
-    res.json(await JobsService.update(req.params.id, req.userId!, input));
+    res.json(await JobsService.update(req.params.id!, req.userId!, input));
   }),
 
   close: asyncHandler(async (req, res) => {
-    res.json(await JobsService.close(req.params.id, req.userId!));
+    res.json(await JobsService.close(req.params.id!, req.userId!));
   }),
 
   remove: asyncHandler(async (req, res) => {
-    await JobsService.remove(req.params.id, req.userId!);
+    await JobsService.remove(req.params.id!, req.userId!);
     res.status(204).end();
   }),
 
@@ -44,7 +44,7 @@ export const JobsController = {
   }),
 
   inbox: asyncHandler(async (req, res) => {
-    res.json(await JobsService.listInbox(req.params.id, req.userId!));
+    res.json(await JobsService.listInbox(req.params.id!, req.userId!));
   }),
 
   // Applicant
@@ -53,7 +53,7 @@ export const JobsController = {
     // Multer attaches the uploaded file as req.file when the field name is "resume".
     const file = (req as unknown as { file?: Express.Multer.File }).file;
     const created = await JobsService.applyToJob(
-      req.params.id,
+      req.params.id!,
       req.userId!,
       input,
       file

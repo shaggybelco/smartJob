@@ -1,10 +1,11 @@
 import { useNavigate, useParams, Link } from "react-router-dom";
-import { ArrowLeft, Trash2, Info } from "lucide-react";
+import { ArrowLeft, Trash2, Info, Ban } from "lucide-react";
 import {
   useApplication,
   useDeleteApplication,
   useUpdateApplication,
 } from "../../api/applications";
+import { useWithdrawApplication } from "../../api/jobApplications";
 import { APP_STATUSES, type AppStatus } from "@smartjob/shared";
 import { StatusBadge } from "../../components/StatusBadge";
 import { formatZar } from "../../lib/format";
@@ -15,16 +16,24 @@ export function ApplicationDetailPage() {
   const { data, isLoading } = useApplication(id);
   const update = useUpdateApplication(id ?? "");
   const del = useDeleteApplication();
+  const withdraw = useWithdrawApplication();
 
   if (isLoading) return <div className="card h-48 animate-pulse" />;
   if (!data) return <div className="card p-6 text-rose-600">Not found.</div>;
 
   const linked = !!data.jobApplicationId;
+  const withdrawn = data.status === "WITHDRAWN";
 
   const onDelete = async () => {
     if (!confirm("Delete this application?")) return;
     await del.mutateAsync(data.id);
     navigate("/applications");
+  };
+
+  const onWithdraw = async () => {
+    if (!data.jobApplicationId) return;
+    if (!confirm("Withdraw this application? The recruiter will see it as withdrawn.")) return;
+    await withdraw.mutateAsync(data.jobApplicationId);
   };
 
   return (
@@ -58,6 +67,17 @@ export function ApplicationDetailPage() {
             >
               {APP_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
             </select>
+            {linked && !withdrawn && (
+              <button
+                onClick={onWithdraw}
+                disabled={withdraw.isPending}
+                className="btn-secondary"
+                title="Withdraw your application"
+              >
+                <Ban size={14} />
+                Withdraw
+              </button>
+            )}
             <button onClick={onDelete} className="btn-danger">
               <Trash2 size={14} />
               Delete
@@ -65,13 +85,18 @@ export function ApplicationDetailPage() {
           </div>
         </div>
 
-        {linked && (
+        {linked && !withdrawn && (
           <div className="flex items-start gap-2 border-t border-brand-100 bg-brand-50 px-5 py-3 text-sm text-brand-800 dark:border-brand-900/40 dark:bg-brand-950/30 dark:text-brand-200">
             <Info size={15} className="mt-0.5 shrink-0" />
             <span>
-              You applied through the job board. Status is updated by the recruiter — your notes
+              You applied through the job board. The recruiter manages the status; your notes
               and reminders below stay private.
             </span>
+          </div>
+        )}
+        {withdrawn && (
+          <div className="border-t border-zinc-200 bg-zinc-50 px-5 py-3 text-sm text-zinc-700 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300">
+            You withdrew this application.
           </div>
         )}
       </div>

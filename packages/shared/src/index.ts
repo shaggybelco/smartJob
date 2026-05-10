@@ -29,6 +29,10 @@ export const ROLES = ["APPLICANT", "RECRUITER"] as const;
 export const RoleSchema = z.enum(ROLES);
 export type Role = z.infer<typeof RoleSchema>;
 
+export const COMPANY_MEMBERSHIPS = ["PENDING", "APPROVED", "ADMIN"] as const;
+export const CompanyMembershipSchema = z.enum(COMPANY_MEMBERSHIPS);
+export type CompanyMembership = z.infer<typeof CompanyMembershipSchema>;
+
 export const JOB_STATUSES = ["OPEN", "CLOSED"] as const;
 export const JobStatusSchema = z.enum(JOB_STATUSES);
 export type JobStatus = z.infer<typeof JobStatusSchema>;
@@ -41,11 +45,18 @@ export const RegisterInput = z
     password: z.string().min(8).max(100),
     name: z.string().min(1).max(80),
     role: RoleSchema.default("APPLICANT"),
+    companyId: z.string().min(1).optional(),
     companyName: z.string().min(1).max(120).optional(),
   })
   .refine(
-    (v) => v.role !== "RECRUITER" || (!!v.companyName && v.companyName.trim().length > 0),
-    { message: "companyName is required for RECRUITER role", path: ["companyName"] },
+    (v) =>
+      v.role !== "RECRUITER" ||
+      !!v.companyId ||
+      (!!v.companyName && v.companyName.trim().length > 0),
+    {
+      message: "Recruiters must select an existing company or provide a new company name",
+      path: ["companyName"],
+    },
   );
 export type RegisterInput = z.infer<typeof RegisterInput>;
 
@@ -86,9 +97,19 @@ export const PublicUser = z.object({
   role: RoleSchema,
   emailVerified: z.boolean().optional(),
   company: PublicCompany.nullable().optional(),
+  companyMembership: CompanyMembershipSchema.nullable().optional(),
   createdAt: z.string(),
 });
 export type PublicUser = z.infer<typeof PublicUser>;
+
+export const CompanyMember = z.object({
+  id: z.string(),
+  email: z.string().email(),
+  name: z.string(),
+  membership: CompanyMembershipSchema,
+  createdAt: z.string(),
+});
+export type CompanyMember = z.infer<typeof CompanyMember>;
 
 // Application (personal tracker)
 

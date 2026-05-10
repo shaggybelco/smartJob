@@ -1,5 +1,5 @@
 import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, FileText, Mail } from "lucide-react";
+import { ArrowLeft, FileText, Mail, Eye } from "lucide-react";
 import {
   useJobApplicationDetail,
   useUpdateJobApplication,
@@ -23,6 +23,8 @@ export function RecruiterApplicationDetailPage() {
     .slice(0, 2)
     .join("")
     .toUpperCase();
+
+  const isPdf = data.resumeMimeType === "application/pdf";
 
   return (
     <div className="space-y-5">
@@ -82,6 +84,20 @@ export function RecruiterApplicationDetailPage() {
         )}
       </section>
 
+      {data.answers && data.answers.length > 0 && (
+        <section className="card space-y-4 p-5">
+          <div className="label">Question answers</div>
+          {data.answers.map((a) => (
+            <div key={a.id}>
+              <div className="text-sm font-medium">{a.question?.prompt ?? "Question"}</div>
+              <div className="mt-0.5 whitespace-pre-wrap text-sm text-slate-700 dark:text-slate-300">
+                {a.answer}
+              </div>
+            </div>
+          ))}
+        </section>
+      )}
+
       <div className="flex flex-wrap gap-2">
         {data.resumeStorageKey && (
           <a
@@ -105,6 +121,22 @@ export function RecruiterApplicationDetailPage() {
           </a>
         )}
       </div>
+
+      {isPdf && (
+        <section className="card p-5">
+          <div className="mb-2 flex items-center gap-2 text-sm font-medium">
+            <Eye size={14} />
+            CV preview
+          </div>
+          <div className="overflow-hidden rounded-md border border-slate-200 dark:border-slate-700">
+            <iframe
+              src={apiUrl(`/resumes/${data.id}`)}
+              title={`Resume: ${data.applicant.name}`}
+              className="h-[640px] w-full bg-white"
+            />
+          </div>
+        </section>
+      )}
 
       <section className="card p-5">
         <div className="label">Recruiter note (private)</div>

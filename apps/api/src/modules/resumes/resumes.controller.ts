@@ -3,7 +3,7 @@ import { ResumesService } from "./resumes.service.js";
 
 export const ResumesController = {
   download: asyncHandler(async (req, res) => {
-    const resolved = await ResumesService.resolve(req.params.id, req.userId!);
+    const resolved = await ResumesService.resolve(req.params.id!, req.userId!);
     res.setHeader("Content-Type", resolved.mimeType);
     res.setHeader(
       "Content-Disposition",

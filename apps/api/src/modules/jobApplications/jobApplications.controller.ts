@@ -9,13 +9,13 @@ import { JobApplicationsService } from "./jobApplications.service.js";
 
 export const JobApplicationsController = {
   detailForRecruiter: asyncHandler(async (req, res) => {
-    res.json(await JobApplicationsService.getForRecruiter(req.params.id, req.userId!));
+    res.json(await JobApplicationsService.getForRecruiter(req.params.id!, req.userId!));
   }),
 
   updateForRecruiter: asyncHandler(async (req, res) => {
     const input = UpdateJobApplicationInput.parse(req.body);
     res.json(
-      await JobApplicationsService.updateForRecruiter(req.params.id, req.userId!, input),
+      await JobApplicationsService.updateForRecruiter(req.params.id!, req.userId!, input),
     );
   }),
 
@@ -29,7 +29,7 @@ export const JobApplicationsController = {
   }),
 
   withdraw: asyncHandler(async (req, res) => {
-    await JobApplicationsService.withdraw(req.params.id, req.userId!);
+    await JobApplicationsService.withdraw(req.params.id!, req.userId!);
     res.status(204).end();
   }),
 

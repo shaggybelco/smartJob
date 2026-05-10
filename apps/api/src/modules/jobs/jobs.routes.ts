@@ -1,5 +1,6 @@
 import { Router } from "express";
 import {
+  optionalAuth,
   requireApprovedRecruiter,
   requireAuth,
   requireRole,
@@ -9,8 +10,8 @@ import { JobsController } from "./jobs.controller.js";
 
 export const jobsRouter = Router();
 
-// Public
-jobsRouter.get("/", JobsController.list);
+// Public (with optional auth so viewers' skills can personalize the response)
+jobsRouter.get("/", optionalAuth, JobsController.list);
 jobsRouter.get("/:id", JobsController.detail);
 
 // Recruiter mutations require an approved (or admin) membership

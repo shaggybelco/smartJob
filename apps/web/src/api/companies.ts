@@ -13,3 +13,17 @@ export const useCompany = (id: string | undefined) =>
     queryFn: () => api.get<PublicCompanyDetail>(`/companies/${id}`),
     enabled: !!id,
   });
+
+export interface CompanySearchResult {
+  id: string;
+  name: string;
+}
+
+export const useCompanySearch = (q: string) =>
+  useQuery({
+    queryKey: ["companies", "search", q],
+    queryFn: () =>
+      api.get<CompanySearchResult[]>(
+        `/companies${q ? `?q=${encodeURIComponent(q)}` : ""}`,
+      ),
+  });

@@ -10,6 +10,7 @@ import { api } from "./client";
 
 export interface JobListItem extends JobWithCompany {
   _count?: { applications: number };
+  matchScore?: number;
 }
 
 export interface JobsListResponse {
@@ -27,6 +28,7 @@ export interface JobsListParams {
   remote?: boolean;
   salaryMin?: number;
   salaryMax?: number;
+  matchMySkills?: boolean;
   page?: number;
   pageSize?: number;
 }

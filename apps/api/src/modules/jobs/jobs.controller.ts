@@ -11,7 +11,7 @@ export const JobsController = {
   // Public
   list: asyncHandler(async (req, res) => {
     const q = JobsListQuery.parse(req.query);
-    res.json(await JobsService.listPublic(q));
+    res.json(await JobsService.listPublic(q, req.userId));
   }),
 
   detail: asyncHandler(async (req, res) => {

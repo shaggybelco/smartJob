@@ -46,6 +46,8 @@ model User {
   email                    String           @unique
   passwordHash             String
   name                     String
+  headline                 String?
+  bio                      String?
   role                     Role               @default(APPLICANT)
   companyId                String?
   company                  Company?           @relation(fields: [companyId], references: [id])
@@ -60,6 +62,34 @@ model User {
   postedJobs               Job[]            @relation("JobPostedBy")
   jobApps                  JobApplication[] @relation("JobAppApplicant")
   savedJobs                SavedJob[]
+  skills                   UserSkill[]
+  experiences              WorkExperience[]
+}
+
+model UserSkill {
+  userId  String
+  skillId String
+  user    User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  skill   Skill @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@id([userId, skillId])
+  @@index([skillId])
+}
+
+model WorkExperience {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title       String
+  company     String
+  location    String?
+  description String?
+  startDate   DateTime
+  endDate     DateTime?
+  current     Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+
+  @@index([userId, startDate])
 }
 
 model Company {
@@ -77,6 +107,7 @@ model Skill {
   name  String  @unique
   slug  String  @unique
   jobs  JobSkill[]
+  users UserSkill[]
 }
 
 model JobSkill {

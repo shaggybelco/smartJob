@@ -96,6 +96,8 @@ export const PublicUser = z.object({
   name: z.string(),
   role: RoleSchema,
   emailVerified: z.boolean().optional(),
+  headline: z.string().nullable().optional(),
+  bio: z.string().nullable().optional(),
   company: PublicCompany.nullable().optional(),
   companyMembership: CompanyMembershipSchema.nullable().optional(),
   createdAt: z.string(),
@@ -236,6 +238,45 @@ export const Skill = z.object({
 });
 export type Skill = z.infer<typeof Skill>;
 
+// Profile
+
+export const WorkExperienceInput = z.object({
+  title: z.string().min(1).max(160),
+  company: z.string().min(1).max(160),
+  location: z.string().max(160).nullish(),
+  description: z.string().max(5000).nullish(),
+  startDate: z.string().datetime(),
+  endDate: z.string().datetime().nullish(),
+  current: z.boolean().default(false),
+});
+export type WorkExperienceInput = z.infer<typeof WorkExperienceInput>;
+
+export const WorkExperience = WorkExperienceInput.extend({
+  id: z.string(),
+  userId: z.string(),
+  createdAt: z.string().datetime(),
+});
+export type WorkExperience = z.infer<typeof WorkExperience>;
+
+export const UpdateProfileInput = z.object({
+  name: z.string().min(1).max(80).optional(),
+  headline: z.string().max(160).nullish(),
+  bio: z.string().max(5000).nullish(),
+});
+export type UpdateProfileInput = z.infer<typeof UpdateProfileInput>;
+
+export const UpdateUserSkillsInput = z.object({
+  skills: z.array(z.string().min(1).max(40)).max(50),
+});
+export type UpdateUserSkillsInput = z.infer<typeof UpdateUserSkillsInput>;
+
+export const ProfileResponse = z.object({
+  user: PublicUser,
+  skills: z.array(Skill),
+  experiences: z.array(WorkExperience),
+});
+export type ProfileResponse = z.infer<typeof ProfileResponse>;
+
 // Job
 
 export const JobBase = z.object({
@@ -299,6 +340,7 @@ export const JobsListQuery = z.object({
   salaryMin: z.coerce.number().int().nonnegative().optional(),
   salaryMax: z.coerce.number().int().nonnegative().optional(),
   skill: z.string().max(40).optional(),
+  matchMySkills: z.coerce.boolean().optional(),
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(100).default(20),
 });

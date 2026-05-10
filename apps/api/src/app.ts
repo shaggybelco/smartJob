@@ -25,6 +25,7 @@ import skillsRouter from "./modules/skills/skills.routes.js";
 import { savedJobsRouter } from "./modules/savedJobs/savedJobs.routes.js";
 import realtimeRouter from "./modules/realtime/realtime.routes.js";
 import membersRouter from "./modules/members/members.routes.js";
+import profileRouter from "./modules/profile/profile.routes.js";
 import docsRouter from "./modules/docs/docs.routes.js";
 import { errorHandler, notFound } from "./middleware/error.js";
 
@@ -58,6 +59,7 @@ export function createApp() {
   app.use("/api/job-applications", jobApplicationsRouter);
   app.use("/api/me/job-applications", myJobApplicationsRouter);
   app.use("/api/me/saved-jobs", savedJobsRouter);
+  app.use("/api/me/profile", profileRouter);
   app.use("/api/companies", companiesRouter);
   app.use("/api/resumes", resumesRouter);
   app.use("/api/skills", skillsRouter);

@@ -156,15 +156,61 @@ async function main() {
 
   const applicant = await prisma.user.upsert({
     where: { email: applicantEmail },
-    update: { role: "APPLICANT", emailVerified: true },
+    update: {
+      role: "APPLICANT",
+      emailVerified: true,
+      headline: "Backend Engineer",
+      bio: "TypeScript / Postgres / cloud. Looking for senior IC roles.",
+    },
     create: {
       email: applicantEmail,
       name: "Demo Applicant",
       passwordHash,
       role: "APPLICANT",
       emailVerified: true,
+      headline: "Backend Engineer",
+      bio: "TypeScript / Postgres / cloud. Looking for senior IC roles.",
     },
   });
+
+  const myExistingSkills = await prisma.userSkill.count({ where: { userId: applicant.id } });
+  if (myExistingSkills === 0) {
+    await prisma.userSkill.createMany({
+      data: ["TypeScript", "Postgres", "Node.js"].map((n) => ({
+        userId: applicant.id,
+        skillId: skillByName(n).id,
+      })),
+      skipDuplicates: true,
+    });
+  }
+
+  const myExistingExperiences = await prisma.workExperience.count({ where: { userId: applicant.id } });
+  if (myExistingExperiences === 0) {
+    await prisma.workExperience.create({
+      data: {
+        userId: applicant.id,
+        title: "Backend Engineer",
+        company: "Globex Industries",
+        location: "Cape Town",
+        description: "Built payment-processing services in TypeScript on AWS.",
+        startDate: new Date("2022-03-01"),
+        endDate: null,
+        current: true,
+      },
+    });
+    await prisma.workExperience.create({
+      data: {
+        userId: applicant.id,
+        title: "Junior Software Engineer",
+        company: "Initech Africa",
+        location: "Cape Town",
+        description: "Worked on the platform team on Postgres-backed APIs.",
+        startDate: new Date("2020-01-01"),
+        endDate: new Date("2022-02-28"),
+        current: false,
+      },
+    });
+  }
 
   const existingTracker = await prisma.application.count({
     where: { userId: applicant.id, jobApplicationId: null },

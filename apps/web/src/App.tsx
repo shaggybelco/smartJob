@@ -1,5 +1,10 @@
 import { Navigate, Route, Routes } from "react-router-dom";
-import { RequireRole, useAuth } from "./lib/auth";
+import {
+  RequireApprovedRecruiter,
+  RequireCompanyAdmin,
+  RequireRole,
+  useAuth,
+} from "./lib/auth";
 import { AppShell } from "./components/AppShell";
 import { useRealtime } from "./api/realtime";
 import { LoginPage } from "./pages/login/LoginPage";
@@ -23,7 +28,9 @@ import { RecruiterJobBoardPage } from "./pages/recruiter/JobBoardPage";
 import { RecruiterApplicationDetailPage } from "./pages/recruiter/ApplicationDetailPage";
 import { RecruiterInboxPage } from "./pages/recruiter/InboxPage";
 import { RecruiterFunnelPage } from "./pages/recruiter/FunnelPage";
+import { TeamPage } from "./pages/recruiter/TeamPage";
 import { InboxPage } from "./pages/inbox/InboxPage";
+import { ProfilePage } from "./pages/profile/ProfilePage";
 
 function Protected({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -57,6 +64,22 @@ function PublicWithOptionalShell({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+const recruiterRoute = (page: React.ReactNode) => (
+  <Protected>
+    <RequireRole role="RECRUITER">
+      <RequireApprovedRecruiter>{page}</RequireApprovedRecruiter>
+    </RequireRole>
+  </Protected>
+);
+
+const adminRoute = (page: React.ReactNode) => (
+  <Protected>
+    <RequireRole role="RECRUITER">
+      <RequireCompanyAdmin>{page}</RequireCompanyAdmin>
+    </RequireRole>
+  </Protected>
+);
+
 export default function App() {
   return (
     <Routes>
@@ -78,15 +101,17 @@ export default function App() {
       <Route path="/applications/:id" element={<Protected><RequireRole role="APPLICANT"><ApplicationDetailPage /></RequireRole></Protected>} />
       <Route path="/board" element={<Protected><RequireRole role="APPLICANT"><BoardPage /></RequireRole></Protected>} />
       <Route path="/saved" element={<Protected><RequireRole role="APPLICANT"><SavedJobsPage /></RequireRole></Protected>} />
+      <Route path="/profile" element={<Protected><RequireRole role="APPLICANT"><ProfilePage /></RequireRole></Protected>} />
 
-      <Route path="/recruiter/inbox" element={<Protected><RequireRole role="RECRUITER"><RecruiterInboxPage /></RequireRole></Protected>} />
-      <Route path="/recruiter/funnel" element={<Protected><RequireRole role="RECRUITER"><RecruiterFunnelPage /></RequireRole></Protected>} />
-      <Route path="/recruiter/jobs" element={<Protected><RequireRole role="RECRUITER"><MyJobsPage /></RequireRole></Protected>} />
-      <Route path="/recruiter/jobs/new" element={<Protected><RequireRole role="RECRUITER"><JobEditPage /></RequireRole></Protected>} />
-      <Route path="/recruiter/jobs/:id/edit" element={<Protected><RequireRole role="RECRUITER"><JobEditPage /></RequireRole></Protected>} />
-      <Route path="/recruiter/jobs/:id/inbox" element={<Protected><RequireRole role="RECRUITER"><JobInboxPage /></RequireRole></Protected>} />
-      <Route path="/recruiter/jobs/:id/board" element={<Protected><RequireRole role="RECRUITER"><RecruiterJobBoardPage /></RequireRole></Protected>} />
-      <Route path="/recruiter/applications/:id" element={<Protected><RequireRole role="RECRUITER"><RecruiterApplicationDetailPage /></RequireRole></Protected>} />
+      <Route path="/recruiter/inbox" element={recruiterRoute(<RecruiterInboxPage />)} />
+      <Route path="/recruiter/funnel" element={recruiterRoute(<RecruiterFunnelPage />)} />
+      <Route path="/recruiter/jobs" element={recruiterRoute(<MyJobsPage />)} />
+      <Route path="/recruiter/jobs/new" element={recruiterRoute(<JobEditPage />)} />
+      <Route path="/recruiter/jobs/:id/edit" element={recruiterRoute(<JobEditPage />)} />
+      <Route path="/recruiter/jobs/:id/inbox" element={recruiterRoute(<JobInboxPage />)} />
+      <Route path="/recruiter/jobs/:id/board" element={recruiterRoute(<RecruiterJobBoardPage />)} />
+      <Route path="/recruiter/applications/:id" element={recruiterRoute(<RecruiterApplicationDetailPage />)} />
+      <Route path="/recruiter/team" element={adminRoute(<TeamPage />)} />
 
       <Route path="*" element={<div className="p-8">404</div>} />
     </Routes>

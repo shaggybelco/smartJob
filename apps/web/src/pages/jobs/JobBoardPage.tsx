@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Search, MapPin, Briefcase, Sparkles, Filter, Globe } from "lucide-react";
+import { Search, MapPin, Briefcase, Sparkles, Filter, Globe, Wand2 } from "lucide-react";
 import { usePublicJobs } from "../../api/jobs";
 import { useSkills } from "../../api/skills";
+import { useProfile } from "../../api/profile";
 import { useAuth } from "../../lib/auth";
 import { formatZarRange } from "../../lib/format";
 import { SaveJobButton } from "../../components/SaveJobButton";
@@ -11,11 +12,16 @@ import { cn } from "../../lib/cn";
 
 export function JobBoardPage() {
   const { user } = useAuth();
+  const isApplicant = user?.role === "APPLICANT";
+  const { data: profile } = useProfile();
+  const mySkillCount = profile?.skills.length ?? 0;
+
   const [q, setQ] = useState("");
   const [location, setLocation] = useState("");
   const [skill, setSkill] = useState<string | null>(null);
   const [remote, setRemote] = useState(false);
   const [salary, setSalary] = useState({ min: 0, max: 2_000_000 });
+  const [matchMySkills, setMatchMySkills] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
 
   const { data, isLoading } = usePublicJobs({
@@ -25,6 +31,7 @@ export function JobBoardPage() {
     remote: remote || undefined,
     salaryMin: salary.min || undefined,
     salaryMax: salary.max < 2_000_000 ? salary.max : undefined,
+    matchMySkills: matchMySkills || undefined,
     pageSize: 50,
   });
   const { data: skills } = useSkills();
@@ -51,7 +58,7 @@ export function JobBoardPage() {
       )}
 
       <section className={inShell ? "" : "mx-auto max-w-5xl px-6 pt-10"}>
-        <div className="flex items-end justify-between gap-4">
+        <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <div className="text-xs font-medium uppercase tracking-wide text-brand-600 dark:text-brand-400">
               Open roles
@@ -59,8 +66,42 @@ export function JobBoardPage() {
             <h1 className="mt-1 text-3xl font-semibold tracking-tight">Find your next role</h1>
             <p className="mt-1 text-sm text-slate-500">
               {data?.total ?? 0} {data?.total === 1 ? "job" : "jobs"} hiring right now.
+              {matchMySkills && mySkillCount > 0 && (
+                <> · matching <strong>{mySkillCount}</strong> of your skills.</>
+              )}
             </p>
           </div>
+          {isApplicant && (
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setMatchMySkills((v) => !v)}
+                disabled={mySkillCount === 0}
+                title={
+                  mySkillCount === 0
+                    ? "Add skills on your profile to enable this"
+                    : matchMySkills
+                      ? "Showing only jobs matching your skills"
+                      : "Show only jobs that match your skills"
+                }
+                className={cn(
+                  "inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
+                  matchMySkills
+                    ? "bg-brand-600 text-white shadow-sm"
+                    : "bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200",
+                  mySkillCount === 0 && "cursor-not-allowed opacity-60",
+                )}
+              >
+                <Wand2 size={13} />
+                {matchMySkills ? "Showing matches" : "Match my skills"}
+              </button>
+              {mySkillCount === 0 && (
+                <Link to="/profile" className="text-xs text-brand-600 hover:underline">
+                  Add skills →
+                </Link>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="card mt-6 p-3">
@@ -205,11 +246,19 @@ export function JobBoardPage() {
                               )}
                             </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <SaveJobButton jobId={job.id} />
-                            {(job.salaryMin || job.salaryMax) && (
-                              <span className="pill bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200">
-                                {formatZarRange(job.salaryMin, job.salaryMax)}
+                          <div className="flex flex-col items-end gap-1">
+                            <div className="flex items-center gap-2">
+                              <SaveJobButton jobId={job.id} />
+                              {(job.salaryMin || job.salaryMax) && (
+                                <span className="pill bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200">
+                                  {formatZarRange(job.salaryMin, job.salaryMax)}
+                                </span>
+                              )}
+                            </div>
+                            {isApplicant && (job.matchScore ?? 0) > 0 && (
+                              <span className="pill bg-brand-100 text-brand-700 dark:bg-brand-900/40 dark:text-brand-200">
+                                <Wand2 size={11} />
+                                {job.matchScore} skill{job.matchScore === 1 ? "" : "s"} match
                               </span>
                             )}
                           </div>

@@ -12,6 +12,8 @@ import {
   X,
   Bookmark,
   TrendingUp,
+  Users,
+  UserCircle2,
 } from "lucide-react";
 import type { Role } from "@smartjob/shared";
 import { useAuth } from "../lib/auth";
@@ -26,6 +28,7 @@ const applicantNav: NavItem[] = [
   { to: "/board", label: "Board", icon: Kanban },
   { to: "/saved", label: "Saved", icon: Bookmark },
   { to: "/jobs", label: "Job board", icon: Briefcase },
+  { to: "/profile", label: "Profile", icon: UserCircle2 },
 ];
 
 const recruiterNav: NavItem[] = [
@@ -35,12 +38,19 @@ const recruiterNav: NavItem[] = [
   { to: "/jobs", label: "Job board", icon: Kanban },
 ];
 
-const navFor = (role: Role | undefined): NavItem[] =>
-  role === "RECRUITER" ? recruiterNav : applicantNav;
+const adminExtra: NavItem = { to: "/recruiter/team", label: "Team", icon: Users };
+
+const navFor = (
+  role: Role | undefined,
+  membership: "PENDING" | "APPROVED" | "ADMIN" | null | undefined,
+): NavItem[] => {
+  if (role !== "RECRUITER") return applicantNav;
+  return membership === "ADMIN" ? [...recruiterNav, adminExtra] : recruiterNav;
+};
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
-  const nav = navFor(user?.role);
+  const nav = navFor(user?.role, user?.companyMembership);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const location = useLocation();
 
@@ -192,16 +202,28 @@ function SidebarContents({
           </div>
         </div>
         {user?.role && (
-          <span
-            className={cn(
-              "pill mt-2",
-              user.role === "RECRUITER"
-                ? "bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-200"
-                : "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200",
+          <div className="mt-2 flex flex-wrap gap-1">
+            <span
+              className={cn(
+                "pill",
+                user.role === "RECRUITER"
+                  ? "bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-200"
+                  : "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200",
+              )}
+            >
+              {user.role}
+            </span>
+            {user.companyMembership === "ADMIN" && (
+              <span className="pill bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-200">
+                ADMIN
+              </span>
             )}
-          >
-            {user.role}
-          </span>
+            {user.companyMembership === "PENDING" && (
+              <span className="pill bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200">
+                PENDING
+              </span>
+            )}
+          </div>
         )}
         <button
           onClick={() => void logout()}

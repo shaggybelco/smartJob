@@ -26,8 +26,18 @@ const ensureRecruiterOwnsJob = async (jobId: string, userId: string) => {
 };
 
 export const JobsService = {
-  async listPublic(q: JobsListQuery) {
+  async listPublic(q: JobsListQuery, viewerUserId?: string) {
     const status = q.status ?? "OPEN";
+
+    let viewerSkillIds: Set<string> | null = null;
+    if (viewerUserId) {
+      const rows = await prisma.userSkill.findMany({
+        where: { userId: viewerUserId },
+        select: { skillId: true },
+      });
+      viewerSkillIds = new Set(rows.map((r) => r.skillId));
+    }
+
     const where: Prisma.JobWhereInput = {
       status,
       ...(q.q
@@ -46,6 +56,9 @@ export const JobsService = {
       ...(q.skill
         ? { skills: { some: { skill: { slug: slugify(q.skill) } } } }
         : {}),
+      ...(q.matchMySkills && viewerSkillIds && viewerSkillIds.size > 0
+        ? { skills: { some: { skillId: { in: [...viewerSkillIds] } } } }
+        : {}),
     };
 
     const [items, total] = await JobRepository.list(
@@ -53,8 +66,22 @@ export const JobsService = {
       (q.page - 1) * q.pageSize,
       q.pageSize,
     );
+
+    const annotated = items.map((job) => {
+      const ids = job.skills?.map((s) => s.skill.id) ?? [];
+      const flat = flattenJobSkills(job);
+      const matchScore = viewerSkillIds
+        ? ids.filter((id) => viewerSkillIds!.has(id)).length
+        : 0;
+      return { ...flat, matchScore };
+    });
+
+    if (q.matchMySkills && viewerSkillIds) {
+      annotated.sort((a, b) => b.matchScore - a.matchScore);
+    }
+
     return {
-      items: items.map(flattenJobSkills),
+      items: annotated,
       page: q.page,
       pageSize: q.pageSize,
       total,

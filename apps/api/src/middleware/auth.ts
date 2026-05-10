@@ -17,6 +17,20 @@ export const requireAuth: RequestHandler = (req, _res, next) => {
   }
 };
 
+// Sets req.userId if a valid cookie is present; otherwise treats as anonymous.
+export const optionalAuth: RequestHandler = (req, _res, next) => {
+  const token = req.cookies?.[AUTH_COOKIE_NAME];
+  if (token) {
+    try {
+      const payload = verifyToken(token);
+      req.userId = payload.sub;
+    } catch {
+      // ignore invalid token; viewer is anonymous
+    }
+  }
+  next();
+};
+
 export const requireRole = (role: Role): RequestHandler => async (req, _res, next) => {
   try {
     if (!req.userId) return next(new HttpError(401, "Not authenticated"));

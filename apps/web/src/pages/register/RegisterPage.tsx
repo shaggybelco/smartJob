@@ -1,9 +1,15 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Sparkles, User, Building2 } from "lucide-react";
+import { Sparkles, User, Building2, Search, Plus, Check } from "lucide-react";
 import type { Role } from "@smartjob/shared";
 import { useAuth } from "../../lib/auth";
+import { useCompanySearch, type CompanySearchResult } from "../../api/companies";
 import { cn } from "../../lib/cn";
+
+type CompanyChoice =
+  | { kind: "existing"; id: string; name: string }
+  | { kind: "new"; name: string }
+  | null;
 
 export function RegisterPage() {
   const { register } = useAuth();
@@ -12,13 +18,31 @@ export function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState<Role>("APPLICANT");
-  const [companyName, setCompanyName] = useState("");
+  const [companyQuery, setCompanyQuery] = useState("");
+  const [company, setCompany] = useState<CompanyChoice>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  const debounced = useDebounced(companyQuery, 200);
+  const { data: results } = useCompanySearch(debounced);
+
+  const exactMatch = useMemo(
+    () =>
+      results?.find(
+        (c) => c.name.toLowerCase() === companyQuery.trim().toLowerCase(),
+      ),
+    [results, companyQuery],
+  );
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    if (role === "RECRUITER" && !company) {
+      setError("Pick an existing company or add a new one.");
+      return;
+    }
+
     setSubmitting(true);
     try {
       await register({
@@ -26,9 +50,12 @@ export function RegisterPage() {
         password,
         name,
         role,
-        companyName: role === "RECRUITER" ? companyName : undefined,
+        companyId:
+          role === "RECRUITER" && company?.kind === "existing" ? company.id : undefined,
+        companyName:
+          role === "RECRUITER" && company?.kind === "new" ? company.name : undefined,
       });
-      navigate(role === "RECRUITER" ? "/recruiter/jobs" : "/dashboard");
+      navigate(role === "RECRUITER" ? "/recruiter/inbox" : "/dashboard");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Registration failed");
     } finally {
@@ -50,8 +77,8 @@ export function RegisterPage() {
             Get started in seconds.
           </h1>
           <p className="max-w-md text-sm text-white/80">
-            Applicants get a job board, kanban tracker and CV upload.
-            Recruiters get a posting tool and an applicant pipeline. Same login.
+            The first recruiter to register for a company becomes its admin. Anyone joining
+            an existing company is approved by an admin first.
           </p>
         </div>
         <div className="text-xs text-white/60">© Smart Job · Demo build</div>
@@ -66,7 +93,6 @@ export function RegisterPage() {
           <h2 className="text-xl font-semibold">Create your account</h2>
           <p className="mt-1 text-sm text-slate-500">Choose how you want to use Smart Job.</p>
 
-          {/* Role picker */}
           <div className="mt-5 grid grid-cols-2 gap-2">
             {(
               [
@@ -88,7 +114,10 @@ export function RegisterPage() {
                   name="role"
                   value={value}
                   checked={role === value}
-                  onChange={() => setRole(value)}
+                  onChange={() => {
+                    setRole(value);
+                    setCompany(null);
+                  }}
                   className="sr-only"
                 />
                 <div className="flex items-center gap-2 text-sm font-medium">
@@ -108,17 +137,33 @@ export function RegisterPage() {
 
             {role === "RECRUITER" && (
               <div className="animate-fade-in">
-                <label className="label" htmlFor="company">Company name</label>
-                <input
-                  id="company"
-                  value={companyName}
-                  onChange={(e) => setCompanyName(e.target.value)}
-                  className="input"
-                  placeholder="Acme Corp"
-                  required
-                />
+                <span className="label">Company</span>
+                {company ? (
+                  <SelectedCompanyChip
+                    company={company}
+                    onChange={() => {
+                      setCompany(null);
+                      setCompanyQuery("");
+                    }}
+                  />
+                ) : (
+                  <CompanyPicker
+                    query={companyQuery}
+                    onQueryChange={setCompanyQuery}
+                    results={results}
+                    onPickExisting={(c) =>
+                      setCompany({ kind: "existing", id: c.id, name: c.name })
+                    }
+                    onCreateNew={(n) => setCompany({ kind: "new", name: n })}
+                    exactMatch={exactMatch}
+                  />
+                )}
                 <p className="mt-1 text-xs text-slate-500">
-                  We'll create the company if it doesn't exist, or link you to an existing one.
+                  {company?.kind === "new"
+                    ? "You'll be the first admin of this company."
+                    : company?.kind === "existing"
+                      ? "Your account will need approval from a company admin."
+                      : "Search for your company. If it doesn't exist yet, add it — you'll be the admin."}
                 </p>
               </div>
             )}
@@ -169,4 +214,99 @@ export function RegisterPage() {
       </div>
     </div>
   );
+}
+
+function CompanyPicker({
+  query,
+  onQueryChange,
+  results,
+  onPickExisting,
+  onCreateNew,
+  exactMatch,
+}: {
+  query: string;
+  onQueryChange: (q: string) => void;
+  results: CompanySearchResult[] | undefined;
+  onPickExisting: (c: CompanySearchResult) => void;
+  onCreateNew: (name: string) => void;
+  exactMatch: CompanySearchResult | undefined;
+}) {
+  const trimmed = query.trim();
+  const showCreate = trimmed.length > 0 && !exactMatch;
+
+  return (
+    <div className="relative">
+      <div className="relative">
+        <Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+        <input
+          type="text"
+          value={query}
+          onChange={(e) => onQueryChange(e.target.value)}
+          placeholder="Search company name"
+          className="input pl-9"
+        />
+      </div>
+      {(results && results.length > 0) || showCreate ? (
+        <div className="mt-1 max-h-56 overflow-y-auto rounded-md border border-slate-200 bg-white shadow-soft dark:border-slate-700 dark:bg-slate-900">
+          {results?.map((r) => (
+            <button
+              key={r.id}
+              type="button"
+              onClick={() => onPickExisting(r)}
+              className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-slate-50 dark:hover:bg-slate-800"
+            >
+              <span>{r.name}</span>
+              <span className="text-xs text-slate-400">Existing</span>
+            </button>
+          ))}
+          {showCreate && (
+            <button
+              type="button"
+              onClick={() => onCreateNew(trimmed)}
+              className="flex w-full items-center gap-2 border-t border-slate-100 bg-brand-50/40 px-3 py-2 text-left text-sm text-brand-700 hover:bg-brand-50 dark:border-slate-800 dark:bg-brand-950/30 dark:text-brand-200"
+            >
+              <Plus size={13} />
+              Add "<span className="font-medium">{trimmed}</span>" as a new company
+            </button>
+          )}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function SelectedCompanyChip({
+  company,
+  onChange,
+}: {
+  company: NonNullable<CompanyChoice>;
+  onChange: () => void;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-2 rounded-md border border-brand-200 bg-brand-50 px-3 py-2 text-sm dark:border-brand-900/40 dark:bg-brand-950/30">
+      <div className="flex items-center gap-2">
+        <Check size={14} className="text-brand-600" />
+        <span className="font-medium">{company.name}</span>
+        <span className="text-xs text-slate-500">
+          {company.kind === "new" ? "(new company)" : "(existing)"}
+        </span>
+      </div>
+      <button
+        type="button"
+        onClick={onChange}
+        className="text-xs text-slate-500 hover:underline"
+      >
+        Change
+      </button>
+    </div>
+  );
+}
+
+function useDebounced<T>(value: T, ms: number): T {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const id = setTimeout(() => setDebounced(value), ms);
+    return () => clearTimeout(id);
+  }, [value, ms]);
+  return debounced;
 }

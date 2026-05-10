@@ -5,8 +5,6 @@ Register, log applications, monitor interview progress, and view analytics.
 
 **Stack:** Express + TypeScript + Prisma + Postgres (API) · Vite + React + TypeScript + Tailwind + shadcn/ui (web) · pnpm monorepo · Docker for local dev.
 
-See [`documentation/2026-05-09-smart-job-tracker-plan.md`](./documentation/2026-05-09-smart-job-tracker-plan.md) for the full design.
-
 ---
 
 ## Quick start (Docker — recommended)

@@ -11,6 +11,9 @@ export default defineConfig({
       "@smartjob/shared": path.resolve(__dirname, "../../packages/shared/src/index.ts"),
     },
   },
+  optimizeDeps: {
+    exclude: ["@smartjob/shared"],
+  },
   server: {
     host: true,
     port: 5173,

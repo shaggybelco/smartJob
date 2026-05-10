@@ -5,7 +5,11 @@ const EnvSchema = z.object({
   PORT: z.coerce.number().int().default(4000),
   DATABASE_URL: z.string().url(),
   JWT_SECRET: z.string().min(16),
-  WEB_ORIGIN: z.string().url().default("http://localhost:5173"),
+  WEB_ORIGIN: z
+    .string()
+    .url()
+    .default("http://localhost:5173")
+    .transform((s) => s.replace(/\/+$/, "")),
   SMTP_HOST: z.string().optional(),
   SMTP_PORT: z.coerce.number().int().default(1025),
   SMTP_SECURE: z.coerce.boolean().default(false),

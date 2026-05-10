@@ -2,8 +2,63 @@
 @tailwind components;
 @tailwind utilities;
 
-html,
-body,
-#root {
-  height: 100%;
+@layer base {
+  html, body, #root { height: 100%; }
+  body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+  /* Tighter focus ring across the app */
+  :focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px rgb(255 255 255), 0 0 0 4px rgb(37 99 235 / 0.55);
+    border-radius: 0.375rem;
+  }
+  ::selection {
+    background-color: rgb(37 99 235 / 0.2);
+  }
+}
+
+@layer components {
+  /* ── Buttons ───────────────────────────────────────────── */
+  .btn {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-md px-3.5 py-2 text-sm font-medium transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-primary {
+    @apply btn bg-brand-600 text-white shadow-sm hover:bg-brand-700 active:bg-brand-800;
+  }
+  .btn-secondary {
+    @apply btn border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800;
+  }
+  .btn-ghost {
+    @apply btn text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800;
+  }
+  .btn-danger {
+    @apply btn border border-rose-200 bg-white text-rose-700 hover:bg-rose-50 dark:border-rose-900/60 dark:bg-slate-900 dark:text-rose-300 dark:hover:bg-rose-950/40;
+  }
+  .btn-xs {
+    @apply px-2 py-1 text-xs;
+  }
+
+  /* ── Surfaces ──────────────────────────────────────────── */
+  .card {
+    @apply rounded-xl border border-slate-200 bg-white shadow-soft dark:border-slate-800 dark:bg-slate-950;
+  }
+  .card-hover {
+    @apply transition-all duration-150 hover:-translate-y-px hover:border-brand-300 hover:shadow-md dark:hover:border-brand-700;
+  }
+
+  /* ── Inputs ────────────────────────────────────────────── */
+  .input {
+    @apply w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 transition-shadow duration-150 focus:border-brand-500 focus:shadow-ring dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500;
+  }
+  .label {
+    @apply mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400;
+  }
+
+  /* ── Pills ─────────────────────────────────────────────── */
+  .pill {
+    @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium;
+  }
 }

@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 import { APP_STATUSES, type AppStatus } from "@smartjob/shared";
 import { useCreateApplication } from "../../api/applications";
 
@@ -39,42 +40,42 @@ export function NewApplicationPage() {
   });
 
   return (
-    <div className="max-w-2xl">
-      <h1 className="mb-4 text-2xl font-semibold">New application</h1>
-      <form onSubmit={onSubmit} className="space-y-3">
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="Company"><input className={inputCls} required {...field("company")} /></Field>
-          <Field label="Role"><input className={inputCls} required {...field("role")} /></Field>
+    <div className="max-w-2xl space-y-5">
+      <Link to="/applications" className="inline-flex items-center gap-1.5 text-sm text-brand-600 hover:underline">
+        <ArrowLeft size={14} />
+        Back
+      </Link>
+      <div>
+        <h1 className="text-3xl font-semibold tracking-tight">New application</h1>
+        <p className="mt-1 text-sm text-slate-500">Track a job you've applied to off the platform.</p>
+      </div>
+
+      <form onSubmit={onSubmit} className="card space-y-4 p-5">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <Field label="Company"><input className="input" required {...field("company")} /></Field>
+          <Field label="Role"><input className="input" required {...field("role")} /></Field>
           <Field label="Status">
-            <select className={inputCls} {...field("status")}>
+            <select className="input" {...field("status")}>
               {APP_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
             </select>
           </Field>
-          <Field label="Source"><input className={inputCls} {...field("source")} /></Field>
-          <Field label="Salary"><input className={inputCls} type="number" {...field("salary")} /></Field>
-          <Field label="Location"><input className={inputCls} {...field("location")} /></Field>
+          <Field label="Source"><input className="input" placeholder="LinkedIn, referral…" {...field("source")} /></Field>
+          <Field label="Salary (ZAR)"><input className="input" type="number" {...field("salary")} /></Field>
+          <Field label="Location"><input className="input" {...field("location")} /></Field>
         </div>
-        <Field label="Job URL"><input className={inputCls} type="url" {...field("jobUrl")} /></Field>
-        <Field label="Notes"><textarea rows={4} className={inputCls} {...field("notes")} /></Field>
+        <Field label="Job URL"><input className="input" type="url" {...field("jobUrl")} /></Field>
+        <Field label="Notes"><textarea rows={4} className="input" {...field("notes")} /></Field>
 
         {create.error && (
-          <div className="text-sm text-rose-600">
+          <div className="rounded-md bg-rose-50 px-3 py-2 text-sm text-rose-700 dark:bg-rose-950/40 dark:text-rose-300">
             {create.error instanceof Error ? create.error.message : "Failed to save"}
           </div>
         )}
         <div className="flex gap-2">
-          <button
-            type="submit"
-            disabled={create.isPending}
-            className="rounded-md bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-50"
-          >
+          <button type="submit" disabled={create.isPending} className="btn-primary">
             {create.isPending ? "Saving…" : "Save"}
           </button>
-          <button
-            type="button"
-            onClick={() => navigate(-1)}
-            className="rounded-md border border-slate-300 px-4 py-2 text-sm dark:border-slate-700"
-          >
+          <button type="button" onClick={() => navigate(-1)} className="btn-secondary">
             Cancel
           </button>
         </div>
@@ -83,13 +84,10 @@ export function NewApplicationPage() {
   );
 }
 
-const inputCls =
-  "w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900";
-
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <label className="block text-sm">
-      <span className="mb-1 block text-slate-600 dark:text-slate-300">{label}</span>
+    <label className="block">
+      <span className="label">{label}</span>
       {children}
     </label>
   );

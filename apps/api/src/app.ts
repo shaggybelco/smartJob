@@ -3,12 +3,23 @@ import cookieParser from "cookie-parser";
 import cors from "cors";
 import helmet from "helmet";
 import morgan from "morgan";
-import { env } from "./env.js";
-import { authRouter } from "./routes/auth.js";
-import { applicationsRouter } from "./routes/applications.js";
-import { eventsRouter } from "./routes/events.js";
-import { remindersOnApplicationRouter, remindersRouter } from "./routes/reminders.js";
-import { analyticsRouter } from "./routes/analytics.js";
+import { env } from "./config/env.js";
+import authRouter from "./modules/auth/auth.routes.js";
+import applicationsRouter from "./modules/applications/applications.routes.js";
+import eventsRouter from "./modules/events/events.routes.js";
+import {
+  remindersOnApplicationRouter,
+  remindersRouter,
+} from "./modules/reminders/reminders.routes.js";
+import analyticsRouter from "./modules/analytics/analytics.routes.js";
+import { jobsRouter, recruiterJobsRouter } from "./modules/jobs/jobs.routes.js";
+import {
+  jobApplicationsRouter,
+  myJobApplicationsRouter,
+  recruiterApplicationsRouter,
+} from "./modules/jobApplications/jobApplications.routes.js";
+import companiesRouter from "./modules/companies/companies.routes.js";
+import resumesRouter from "./modules/resumes/resumes.routes.js";
 import { errorHandler, notFound } from "./middleware/error.js";
 
 export function createApp() {
@@ -33,6 +44,13 @@ export function createApp() {
   app.use("/api/applications/:id/reminders", remindersOnApplicationRouter);
   app.use("/api/reminders", remindersRouter);
   app.use("/api/analytics", analyticsRouter);
+  app.use("/api/jobs", jobsRouter);
+  app.use("/api/recruiter/jobs", recruiterJobsRouter);
+  app.use("/api/recruiter/applications", recruiterApplicationsRouter);
+  app.use("/api/job-applications", jobApplicationsRouter);
+  app.use("/api/me/job-applications", myJobApplicationsRouter);
+  app.use("/api/companies", companiesRouter);
+  app.use("/api/resumes", resumesRouter);
 
   app.use(notFound);
   app.use(errorHandler);

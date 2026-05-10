@@ -7,13 +7,14 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id           String        @id @default(cuid())
-  email        String        @unique
-  passwordHash String
-  name         String
-  createdAt    DateTime      @default(now())
-  applications Application[]
+enum Role {
+  APPLICANT
+  RECRUITER
+}
+
+enum JobStatus {
+  OPEN
+  CLOSED
 }
 
 enum AppStatus {
@@ -22,6 +23,7 @@ enum AppStatus {
   INTERVIEW
   OFFER
   REJECTED
+  WITHDRAWN
 }
 
 enum EventType {
@@ -33,23 +35,154 @@ enum EventType {
   NOTE
 }
 
+model User {
+  id                       String           @id @default(cuid())
+  email                    String           @unique
+  passwordHash             String
+  name                     String
+  role                     Role             @default(APPLICANT)
+  companyId                String?
+  company                  Company?         @relation(fields: [companyId], references: [id])
+  emailVerified            Boolean          @default(false)
+  emailVerificationToken   String?          @unique
+  passwordResetToken       String?          @unique
+  passwordResetExpiresAt   DateTime?
+  tokenVersion             Int              @default(0)
+  createdAt                DateTime         @default(now())
+  applications             Application[]
+  postedJobs               Job[]            @relation("JobPostedBy")
+  jobApps                  JobApplication[] @relation("JobAppApplicant")
+  savedJobs                SavedJob[]
+}
+
+model Company {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  website     String?
+  description String?
+  createdAt   DateTime @default(now())
+  recruiters  User[]
+  jobs        Job[]
+}
+
+model Skill {
+  id    String  @id @default(cuid())
+  name  String  @unique
+  slug  String  @unique
+  jobs  JobSkill[]
+}
+
+model JobSkill {
+  jobId   String
+  skillId String
+  job     Job   @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  skill   Skill @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@id([jobId, skillId])
+  @@index([skillId])
+}
+
+model Job {
+  id           String           @id @default(cuid())
+  companyId    String
+  company      Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  postedById   String
+  postedBy     User             @relation("JobPostedBy", fields: [postedById], references: [id])
+  title        String
+  description  String
+  location     String?
+  remote       Boolean          @default(false)
+  salaryMin    Int?
+  salaryMax    Int?
+  status       JobStatus        @default(OPEN)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  applications JobApplication[]
+  questions    JobQuestion[]
+  skills       JobSkill[]
+  savedBy      SavedJob[]
+
+  @@index([status, createdAt])
+  @@index([companyId])
+}
+
+model JobQuestion {
+  id       String   @id @default(cuid())
+  jobId    String
+  job      Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  prompt   String
+  required Boolean  @default(false)
+  position Int      @default(0)
+  answers  ApplicationAnswer[]
+
+  @@index([jobId, position])
+}
+
+model ApplicationAnswer {
+  id               String         @id @default(cuid())
+  jobApplicationId String
+  jobApplication   JobApplication @relation(fields: [jobApplicationId], references: [id], onDelete: Cascade)
+  questionId       String
+  question         JobQuestion    @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  answer           String
+
+  @@unique([jobApplicationId, questionId])
+}
+
+model SavedJob {
+  userId  String
+  jobId   String
+  user    User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  job     Job  @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  savedAt DateTime @default(now())
+
+  @@id([userId, jobId])
+  @@index([userId, savedAt])
+}
+
+model JobApplication {
+  id               String              @id @default(cuid())
+  jobId            String
+  job              Job                 @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  applicantId      String
+  applicant        User                @relation("JobAppApplicant", fields: [applicantId], references: [id], onDelete: Cascade)
+  coverLetter      String?
+  resumeUrl        String?
+  resumeStorageKey String?
+  resumeFilename   String?
+  resumeMimeType   String?
+  resumeSize       Int?
+  status           AppStatus           @default(APPLIED)
+  recruiterNote    String?
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+  trackerEntry     Application?
+  answers          ApplicationAnswer[]
+
+  @@unique([jobId, applicantId])
+  @@index([jobId, status])
+  @@index([applicantId])
+}
+
 model Application {
-  id        String     @id @default(cuid())
-  userId    String
-  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  company   String
-  role      String
-  status    AppStatus  @default(APPLIED)
-  source    String?
-  salary    Int?
-  jobUrl    String?
-  location  String?
-  notes     String?
-  appliedAt DateTime   @default(now())
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
-  events    Event[]
-  reminders Reminder[]
+  id               String          @id @default(cuid())
+  userId           String
+  user             User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company          String
+  role             String
+  status           AppStatus       @default(APPLIED)
+  source           String?
+  salary           Int?
+  jobUrl           String?
+  location         String?
+  notes            String?
+  appliedAt        DateTime        @default(now())
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  jobApplicationId String?         @unique
+  jobApplication   JobApplication? @relation(fields: [jobApplicationId], references: [id], onDelete: SetNull)
+  events           Event[]
+  reminders        Reminder[]
 
   @@index([userId, status])
   @@index([userId, appliedAt])

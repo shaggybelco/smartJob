@@ -28,6 +28,9 @@ Thumbs.db
 # Prisma
 apps/api/prisma/migrations/dev.db*
 
+# Uploaded resumes (dev local storage)
+apps/api/uploads/
+
 # Test artifacts
 playwright-report/
 test-results/

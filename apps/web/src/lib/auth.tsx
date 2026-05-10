@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { Navigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import type { PublicUser } from "@smartjob/shared";
+import type { PublicUser, RegisterInput, Role } from "@smartjob/shared";
 import { authApi } from "../api/auth";
 import { ApiError } from "../api/client";
 
@@ -8,7 +9,7 @@ interface AuthState {
   user: PublicUser | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, name: string) => Promise<void>;
+  register: (input: RegisterInput) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -36,8 +37,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     qc.clear();
   };
 
-  const register = async (email: string, password: string, name: string) => {
-    const u = await authApi.register({ email, password, name });
+  const register = async (input: RegisterInput) => {
+    const u = await authApi.register(input);
     setUser(u);
     qc.clear();
   };
@@ -60,3 +61,19 @@ export const useAuth = () => {
   if (!ctx) throw new Error("useAuth must be used inside AuthProvider");
   return ctx;
 };
+
+export const useRole = (): Role | null => useAuth().user?.role ?? null;
+
+export function RequireRole({ role, children }: { role: Role; children: ReactNode }) {
+  const { user, loading } = useAuth();
+  if (loading) return <div className="p-8 text-center">Loading…</div>;
+  if (!user) return <Navigate to="/login" replace />;
+  if (user.role !== role) {
+    return (
+      <div className="p-8 text-center text-rose-600">
+        Access denied — this page is for {role.toLowerCase()}s only.
+      </div>
+    );
+  }
+  return <>{children}</>;
+}

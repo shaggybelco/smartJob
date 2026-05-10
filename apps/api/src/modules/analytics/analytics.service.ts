@@ -1,31 +1,14 @@
-import { Router } from "express";
-import { prisma } from "../db.js";
-import { requireAuth } from "../middleware/auth.js";
-import { APP_STATUSES, type AppStatus } from "@smartjob/shared";
+import { APP_STATUSES, type AnalyticsSummary, type AppStatus } from "@smartjob/shared";
+import { AnalyticsRepository } from "./analytics.repository.js";
 
-export const analyticsRouter = Router();
-
-analyticsRouter.use(requireAuth);
-
-analyticsRouter.get("/summary", async (req, res, next) => {
-  try {
-    const userId = req.userId!;
-
+export const AnalyticsService = {
+  async summary(userId: string): Promise<AnalyticsSummary> {
     const [grouped, applications] = await Promise.all([
-      prisma.application.groupBy({
-        by: ["status"],
-        where: { userId },
-        _count: { _all: true },
-      }),
-      prisma.application.findMany({
-        where: { userId },
-        select: { appliedAt: true },
-      }),
+      AnalyticsRepository.countByStatus(userId),
+      AnalyticsRepository.appliedDates(userId),
     ]);
 
-    const byStatus = Object.fromEntries(
-      APP_STATUSES.map((s) => [s, 0]),
-    ) as Record<AppStatus, number>;
+    const byStatus = Object.fromEntries(APP_STATUSES.map((s) => [s, 0])) as Record<AppStatus, number>;
     for (const row of grouped) byStatus[row.status as AppStatus] = row._count._all;
 
     const monthlyMap = new Map<string, number>();
@@ -38,7 +21,7 @@ analyticsRouter.get("/summary", async (req, res, next) => {
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([month, count]) => ({ month, count }));
 
-    res.json({
+    return {
       totals: {
         applications: applications.length,
         interviews: byStatus.INTERVIEW,
@@ -47,8 +30,6 @@ analyticsRouter.get("/summary", async (req, res, next) => {
       },
       byStatus,
       monthlyTrend,
-    });
-  } catch (err) {
-    next(err);
-  }
-});
+    };
+  },
+};

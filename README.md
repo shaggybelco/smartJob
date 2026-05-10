@@ -8,7 +8,9 @@ Two-sided job platform. Applicants browse a public job board, apply with a CV, a
 - Monorepo: pnpm workspaces (`apps/api`, `apps/web`, `packages/shared`)
 - CI: GitHub Actions
 
-## Quick start
+## Quick start (Docker — recommended)
+
+Requires Docker Desktop.
 
 ```bash
 docker start smartjob-pg              # Postgres on host port 5433

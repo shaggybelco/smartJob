@@ -5,6 +5,7 @@ coverage/
 .turbo/
 .next/
 .cache/
+*.tsbuildinfo
 
 # Env
 .env

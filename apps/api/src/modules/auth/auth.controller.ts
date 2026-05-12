@@ -6,7 +6,11 @@ import {
   VerifyEmailInput,
 } from "@smartjob/shared";
 import { asyncHandler } from "../../lib/asyncHandler.js";
-import { AUTH_COOKIE_NAME, authCookieOptions } from "../../config/cookies.js";
+import {
+  AUTH_COOKIE_NAME,
+  authCookieOptions,
+  clearAuthCookieOptions,
+} from "../../config/cookies.js";
 import { AuthService, serializeUser } from "./auth.service.js";
 
 export const AuthController = {
@@ -25,7 +29,7 @@ export const AuthController = {
   }),
 
   logout: asyncHandler(async (_req, res) => {
-    res.clearCookie(AUTH_COOKIE_NAME, { path: "/" });
+    res.clearCookie(AUTH_COOKIE_NAME, clearAuthCookieOptions);
     res.status(204).end();
   }),
 
